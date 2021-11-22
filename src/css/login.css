@@ -1,0 +1,16 @@
+.backgroundsetting {
+    margin: 5px;
+    background-color: rgb(187, 212, 212);
+}
+
+form#basic {
+    padding: 5px;
+    padding-top: 39px;
+    width: 80%;
+}
+
+.login {
+    font-size: 25px;
+    font-weight: 400;
+    margin-left: -50 px;
+}
