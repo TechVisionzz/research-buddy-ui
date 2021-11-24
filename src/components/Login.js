@@ -7,14 +7,9 @@ import { tokenstore } from "../global/global";
 import { Redirect ,useHistory} from "react-router";
 import Dashboard from "./Dashboard";
 import { doLogin, isLoggedIn } from "./CommonHelper";
-
 var myself,myform;
-
-
 const Link = require("react-router-dom").Link;
  class Login extends Component {
-  // routerhistory=useHistory();
-
     constructor() {
         super();
     myself=this;

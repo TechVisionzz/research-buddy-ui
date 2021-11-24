@@ -142,7 +142,7 @@ await  getPublishers().then(async(response)=>
           // var joined = this.state.contributerByName.concat('1');
           // {publisherByName: [...this.state.publisherByName,...[response.data] ]}
            await this.setState({contributerByName: [...this.state.contributerByName,response.data[0].id ]});
-           console.log(this.state.contributerByName);
+          //  console.log(this.state.contributerByName);
             // { contributerByName:response.data[0].id }
         }
       }).catch(async (error) => {
@@ -167,7 +167,7 @@ await  getPublishers().then(async(response)=>
   await  getPublishersByName(selectedItem.volumeInfo.publisher).then(async(response)=> {
     if(response && response.data){
       await  this.setState({publisherByName: [...this.state.publisherByName,...[response.data[0].id] ]});
-      console.log(this.state.publisherByName);
+      // console.log(this.state.publisherByName);
     }
   }).catch(async (error) => {
     console.log(error);

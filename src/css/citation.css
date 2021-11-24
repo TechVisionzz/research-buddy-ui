@@ -1,4 +1,30 @@
 .datepickerstyle {
-    /* width: 100%; */
     float: left;
+}
+
+label[title="Bill"],
+label[title="Book"],
+label[title="Book Section"],
+label[title="Case"],
+label[title="Computer Program"],
+label[title="Conference Proceedings"],
+label[title="Encyclopedia Article"],
+label[title="Film"],
+label[title="Hearing"],
+label[title="Journal Article"],
+label[title="Newspaper Article"],
+label[title="Magazine Article"],
+label[title="Patent"],
+label[title="Report"],
+label[title="Statute"],
+label[title="Television Broadcast"],
+label[title="Thesis"],
+label[title="Unspecified"],
+label[title="Web Page"],
+label[title="Working Paper"] {
+    display: none;
+}
+
+input#root_Reference {
+    display: none;
 }

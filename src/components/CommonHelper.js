@@ -154,7 +154,7 @@ const createContributors = (data) => {
   return api.post(`${backendBaseUrl}/contributors`, data);
 };
 const createCitations = (data) => {
-  console.log("createCitations"+data);
+  // console.log("createCitations"+data);
   return api.post(`${backendBaseUrl}/citations`, data);
 };
 const deleteCitations = (citationid) => {
