@@ -1,11 +1,12 @@
 import React, { Component,createRef } from "react";
-import { Form, Input, Button, Checkbox,Row,Col,message } from 'antd';
+import { Form, Input, Button, Checkbox,Row,Col,message,Spin } from 'antd';
 import '../css/login.css';
 import { Link } from 'react-router-dom';
 import {BrowserRouter as Router, Switch, Route} from "react-router-dom";
-import {dosignup} from './CommonHelper';
+import {dosignup,doLogin,isLoggedIn,doLogout,createworkspaces,createTags} from './CommonHelper';
 import Login from "./Login";
 import axios from "axios";
+import { tokenstore } from "../global/global";
 var myself,myform;
 
 
@@ -23,87 +24,95 @@ myform=createRef();
         password: '',
         phone: '',
         email: '',
+        isSpinVisible:false
       },
       error: null,
     };
   }
-
-  // async handleSubmit () {
-  //   // var workspace={
-  //   //   name:myform.current.getFieldValue('name'),
-  //   //   username:myform.current.getFieldValue('username'),
-  //   //   password:myform.current.getFieldValue('password'),
-  //   //   phone:myform.current.getFieldValue('phone'),
-  //   //   email:myform.current.getFieldValue('email'),
-
-  //   // }
-  //   try {
-  //     const response = await axios.post(
-  //       'http://localhost:1337/auth/local/register', {
-  //         username: myform.current.getFieldValue('username'),
-  //         phone:myform.current.getFieldValue('phone'),
-  //         name:myform.current.getFieldValue('name'),
-  //         email:myform.current.getFieldValue('email'),
-  //         password: myform.current.getFieldValue('password'),
-  //       })
-  //     if(response)
-  //     {
-  //     // <Alert message="Data Save Successfully!" type="success" showIcon closable />
-  //     myform.current.resetFields();
-  //     alert(" Sign Up Successfull!");
-  //     myself.props.history.push('/');  
-  //   }
-  //   } catch (error) {
-  //     alert(error);
-  //   }
-  // };
-  async handleSubmit () {
+  componentDidMount=async()=>{
+    this.setState({isSpinVisible:false});
+  }
+    render() {
+        const { error, modifiedData } = this.state;
+        const onFinish = (values) => {
+          console.log('Success:', values.email);
+          this.setState({isSpinVisible:true});
+    
     var workspace={
       username: myform.current.getFieldValue('username'),
       phone:myform.current.getFieldValue('phone'),
       name:myform.current.getFieldValue('name'),
       email:myform.current.getFieldValue('email'),
       password: myform.current.getFieldValue('password'),
-
     }
-      
-  
+    if(workspace.username==null){
+      this.setState({isSpinVisible:false});
+    }
     dosignup(workspace).then(async (response) => {
           if (response && response.data) {
-      myform.current.resetFields();
-      message.success('Signup  Successfull!');
-      myself.props.history.push('/dashboard');
+              console.log(myform.current.getFieldValue('email'));
+      // login after succesfull signup
+      await doLogin(myform.current.getFieldValue('email'),myform.current.getFieldValue('password'));
+     console.log(isLoggedIn());
+        if(isLoggedIn())
+        {
+            myform.current.resetFields();
+        //add default workspace
+        var defaultWorkspace={
+            name: "Default Workspace",
+            description:"Default Description",
+            parent:"Default",
+            user:tokenstore.userid,
+          }
+          createworkspaces(defaultWorkspace).then((response)=>{if(response && response.data){
+            //create tag
+            var tags={
+              parentTag:['Default Parent'],
+          tags:'Default Parent',
+          name:'Default Parent',
+          user:tokenstore.userid
+            }
+            //  console.log(tags);
+             createTags(tags).then(async (response) => {
+               if (response && response.data) {
+                this.setState({isSpinVisible:false});
+              message.success('Signup  Successfull!');
+              myself.props.history.push('/'); 
+              doLogout();
+               }
+           }).catch(async (error) => {
+               console.log(error);
+           });
+          }});
+         
+
+        }
+        //end
           }
       }).catch(async (error) => {
           console.log(error);
-          alert(error);
+          // alert(error);
       });
-  };
-    render() {
-        const { error, modifiedData } = this.state;
-        const onFinish = (values) => {
-          console.log('Success:', values);
         };
       
         const onFinishFailed = (errorInfo) => {
-          console.log('Failed:', errorInfo);
+          message.info('Signup  Successfull!');
         };
     
         // Print errors if any
         if (error) {
           return <div>An error occured: {error.message}</div>;
         }
-    
         return (
+          <Spin size="large"  spinning={this.state.isSpinVisible} >
                 <Row justify="center" gutter={{ xs: 0, sm:0, md:0, lg:8 }}>
             <Col className="gutter-row" span={12}>
                 <div className="backgroundsetting">
-                    <Form ref={myform} name="basic" labelCol={{span:8,}}wrapperCol={{span:16,}}initialValues={{remember:true,}} autoComplete="off" >
-                        {/* <div style={{textAlign:"center"}}>Log In</div> */}
+                    <Form ref={myform} onFinish={onFinish} onFinishFailed={onFinishFailed} name="basic" labelCol={{span:8,}}wrapperCol={{span:16,}}initialValues={{remember:true,}} autoComplete="off" >
                         <Form.Item  wrapperCol={{offset: 8, span: 16,}}>
                             <span className="login" >Sign Up</span>
                         </Form.Item>
-                        <Form.Item label="Name"  name="name" rules={[{required: true, message: 'Please input your Name!',},]} value={modifiedData.name}>
+                        <Form.Item label="Name"  name="name" rules={[{required: true, message: 'Please input your Name!'}]} value={modifiedData.name}>
                             <Input />
                         </Form.Item>
                         <Form.Item label="Email"  name="email" rules={[{type: 'email',message: 'The input is not valid E-mail!',},{required: true, message: 'Please input your Email!',},]} value={modifiedData.email}>
@@ -121,7 +130,7 @@ myform=createRef();
                         </Form.Item>
 
                         <Form.Item style={{textAlign:"left"}} wrapperCol={{offset: 8,span: 16,}}>
-                            <Button onClick={this.handleSubmit} type="primary" htmlType="submit">Register</Button>
+                            <Button  type="primary" htmlType="submit">Register</Button>
                             or 
                         <Link to="/">Login</Link>
                         </Form.Item>
@@ -130,7 +139,7 @@ myform=createRef();
             </Col>
            
         </Row>
-        
+        </Spin>
         );
     }
 }

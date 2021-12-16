@@ -1,8 +1,6 @@
 import logo from './logo.svg';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import message from './components/message';
-import Parent from './components/Parent';
 import 'antd/dist/antd.css';
 import Signupp from './components/Signupp';
 import Dashboard from './components/Dashboard';
@@ -25,13 +23,11 @@ function App() {
 
     <div className="App">
     <Router>
-  {/* <Dashboard/> */}
-    <Switch>
-        <Route path="/signup" component={Signupp} />
-        <Route exact path="/" component={Login} />
+        <Switch>
+          <Route path="/signup" component={Signupp} />
+          <Route exact path="/" component={Login} />
           <SecureRoute  path="/dashboard" component={Dashboard} />
         </Switch>
-        
     </Router>
     </div>
   )

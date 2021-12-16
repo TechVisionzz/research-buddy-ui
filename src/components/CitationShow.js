@@ -1,8 +1,9 @@
-import React,{createRef} from 'react';
+import React,{createRef,Component, Suspense} from 'react';
+import { withTranslation } from 'react-i18next';
 import {getcitaions,deleteWorkspace,getCitationsBiblography,editWorkspace} from './CommonHelper';
 import { Table, Tag, Space,Tooltip,Popconfirm,message, Form,Button,Modal,Select  } from 'antd';
-import { DeleteOutlined,EditOutlined, ExportOutlined, StarTwoTone } from '@ant-design/icons';
-import {deleteCitations} from './CommonHelper';
+import { ConsoleSqlOutlined, DeleteOutlined,EditOutlined, ExportOutlined, StarTwoTone } from '@ant-design/icons';
+import {deleteCitations,doLogout,getSelectedWorkspace,getSelectedCitation,getCitationAgainstWorkspace} from './CommonHelper';
 import { tokenstore } from '../global/global';
 import moment from 'moment';
 import {getTemplate} from './csl/index.js'
@@ -11,36 +12,109 @@ const { csl } = require('@citation-js/plugin-csl');
 var books = require('google-books-search');
 var myself,type;
 let language = 'en-US';
+var t;
 class CitationShow extends React.Component {
   constructor()
   {
     super();
     this.exportSingleCitation = this.exportSingleCitation.bind(this);
     myself=this;
+    t  = this.props;
     this.state = {
+      modifiedData: {
+        name: '',
+        description: '',
+        parent: '',
+        user:[],
+        citations:[],
+        trash:false
+      },
+      citationData:[],
+      // citationData: {
+      //   id:'',
+      //   title: '',
+      //   type: '',
+      //   edition: '',
+      //   publicationdate: '',
+      //   doi: '',
+      //   identifier: '',
+      //   contributors: [],
+      //   publishers: [],
+      //   workspaces: [],
+      //   year: '',
+      //   codepages: '',
+      //   city: '',
+      //   legislativeBody: '',
+      //   trash:false,
+      //   code: '',
+      //   month: '',
+      //   day: '',
+      //   abstract: '',
+      //   pages: '',
+      //   volume: '',
+      //   editors: '',
+      //   book: '',
+      //   chapter: '',
+      //   version: '',
+      //   proctitle: '',
+      //   encyclopedia: '',
+      //   country: '',
+      //   journal: '',
+      //   issue: '',
+      //   issuer: '',
+      //   institution: '',
+      //   number: '',
+      //   assignee: '',
+      //   source: '',
+      //   statutenumber: '',
+      //   department: '',
+      //   thesistype: '',
+      //   typeofwork: '',
+      //   series: '',
+      //   distributor: '',
+      //   publication: '',
+      // },
       citations: [],
       error: null,
       isModalVisible:false
     };
   }
-  componentDidMount= () => {
-    // this.setState({ citations: this.props.selectedCitations});
-  //  console.log(this.state.citations);
-  //   await getcitaions().then((response) => {
-  //     if (response && response.data) {
-  //       console.log('workspaceshow');
-  //         this.setState({ citations: response.data });
-  //     }
-  // }).catch(async (error) => {
-  //     console.log(error);
-  //     await doLogout();
-  //     // this.props.checkLogin();
-  // });
+
+  async getCitations()
+  {
+  console.log("hasgjhs");
+    getcitaions().then(async(response) => {
+      if (response && response.data) {
+        // console.log('workspaceshow');
+       await   this.setState({ citations: response.data });
+console.log(this.state.citations);
+      }
+  }).catch(async (error) => {
+      console.log(error);
+  });
+  }
+  componentDidMount= async() => {
+this.getCitations();
   };
  async confirmdelete(citationid) {
-  await  deleteCitations(citationid);
-    message.success('Data Delete Successfully!');
-     myself.props.history.push('/dashboard'); 
+         //fetch citation from db for delete 
+         tokenstore.citationId=citationid;
+  await getSelectedCitation(citationid).then(async (response)=>{
+    if(response && response.data)
+    {
+      response.data.trash=true;
+      await this.setState({citationData:response.data});
+    }
+  })
+  .catch(async(error)=>{
+   console.log(error);
+   await doLogout();
+  });
+  await  deleteCitations(this.state.citationData);
+  const { t } = this.props;
+  message.success(t('deleteSuccessMessage'));
+  console.log("hasgjhs");
+  this.getCitations();
   }
   //this is used to export citation in different formats like mla ,chicago etc.
    exportSingleCitation=()=> {
@@ -93,27 +167,128 @@ class CitationShow extends React.Component {
       }
     } )
     }
+    //delete only workSpace
     async deleteWorkspace() {
-        await  deleteWorkspace();
-        message.success('Data Delete Successfully!');
+      //fetch workspace from db for delete 
+  await getSelectedWorkspace().then(async (response)=>{
+    if(response && response.data)
+    {
+      if(response.data.name==="Default Workspace"){
+        console.log("delete workspace if condition")
+        message.warning("You cannot Delete Default Workspace!");
+      }
+      else{
+        response.data.trash=true;
+        await this.setState({modifiedData:response.data});
+        console.log(this.state.modifiedData);
+        await  deleteWorkspace(this.state.modifiedData);
+        message.success("Workspace Deleted Successfully");
+      }
+       
+    }
+  
+
+  })
+  .catch(async(error)=>{
+   console.log(error);
+   await doLogout();
+  });
         myself.props.history.push('/dashboard'); 
+        myself.props.updateText("updated state from child component");
+      }
+       //delete workSpace with Citations
+    async deleteWorkspaceWithCitations() {
+      //fetch workspace from db for delete 
+  await getSelectedWorkspace().then(async (response)=>{
+    if(response && response.data)
+    {
+      if(response.data.name==="Default Workspace"){
+        message.warning("You cannot Delete Default Workspace!");
+        myself.props.history.push('/dashboard'); 
+        myself.props.updateText("updated state from child component");
+      }
+      else{
+        response.data.trash=true;
+        await this.setState({modifiedData:response.data});
+        console.log(this.state.modifiedData);
+        await  deleteWorkspace(this.state.modifiedData);
+                
+//fetch citations from db against workspaces for delete 
+await getCitationAgainstWorkspace().then(async (response)=>{
+  if(response && response.data)
+  {
+    console.log(response.data);
+//set trash values to true using loop in state because one workspace has multiple citations
+    await this.setState({citationData:response.data});
+    if(this.state.citationData.length>0){
+      this.state.citationData.map((item)=>{
+        item.trash=true;
+        console.log(item);
+      });
+    }
+  }
+})
+.catch(async(error)=>{
+ console.log(error);
+ await doLogout();
+});
+//update trash values in citation table using loop
+if(this.state.citationData.length>0){
+  this.state.citationData.map(async(item)=>{
+    // 
+    tokenstore.citationId=item.id;
+    await  deleteCitations(item).then(async (response)=>{
+      if(response && response.data)
+      {
+        console.log(response.data);
+      }
+    })
+    .catch(async(error)=>{
+     console.log(error);
+     await doLogout();
+    });
+  });
+  const {t}=myself.props;
+  message.success(t('deleteSuccessMessage'));
+  myself.props.updateText("updated state from child component");
+}
+//delete citation end here
+      }
+     
+    }
+  })
+  .catch(async(error)=>{
+   console.log(error);
+   await doLogout();
+  });
       }
       async editWorkspace()
        {
-        //  console.log("gscjhcvuxvhcjhs");
-        // await editWorkspace();
-        // message.success('Data Edit Successfully!');
-        myself.props.history.push('/WorkspaceEdit'); 
+        await editWorkspace().then(async (response)=>{
+          if(response && response.data)
+          {
+           if(response.data.name==="Default Workspace"){
+             message.warning("You cannot Edit Default Workspace!");
+             myself.props.history.push('/dashboard'); 
+             myself.props.updateText("updated state from child component");
+           }
+           else{
+            myself.props.history.push('/WorkspaceEdit'); 
+           }
+          }
+        })
+        .catch(async(error)=>{
+         console.log(error);
+         await doLogout();
+        });
       }
        showModal = () => {
         this.setState({isModalVisible:true});
       };
     async citationEdit(citationid) {
       tokenstore.citationEdit=citationid;
-      // console.log('citationEdit'+tokenstore.citationEdit);
         myself.props.history.push('/citationEdit'); 
       }
-
       showStyleModel=(citationid)=>
       {
         tokenstore.exportCitation=citationid;
@@ -127,58 +302,58 @@ class CitationShow extends React.Component {
        this.setState({isModalVisible:false});
       }
   render() {
+     //this is set for translation
+ const { t } = this.props;
     console.log('rendermethod'); 
     const { Option } = Select;
     const columns = [
       {
-        title: 'Title',
+        title: t('citationShow.title'),
         dataIndex: 'title',
         key: 'title',
         render: text => <a>{text}</a>,
       },
       {
-        title: 'Type',
+        title: t('citationShow.type'),
         dataIndex: 'type',
         key: 'type',
         responsive: ['md'],
       },
       {
-        title: 'Action',
+        title: t('citationShow.action'),
         key: 'action',
         render: (text, record) => (
           <Space size="middle">
-            <Tooltip placement="top" title='Export'><a> <ExportOutlined onClick={()=>this.showStyleModel(record.id)} style={{ fontSize: '16px' }}/> </a> </Tooltip>
-            <Tooltip placement="top" title='Edit'><a> <EditOutlined onClick={()=>this.citationEdit(record.id)} style={{ fontSize: '16px',color: '#4f4fff' }}/> </a> </Tooltip>
-            <Tooltip placement="top" title='Delete'><Popconfirm onConfirm={()=> this.confirmdelete(record.id)} title="Are you sure？" okText="Yes" cancelText="No"><a><DeleteOutlined style={{ fontSize: '16px',color: '#ff3a3a' }}/> </a> </Popconfirm></Tooltip>
+            <Tooltip placement="top" title={t('citationShow.export')}><a> <ExportOutlined onClick={()=>this.showStyleModel(record.id)} style={{ fontSize: '16px' }}/> </a> </Tooltip>
+            <Tooltip placement="top" title={t('citationShow.edit')}><a> <EditOutlined onClick={()=>this.citationEdit(record.id)} style={{ fontSize: '16px',color: '#4f4fff' }}/> </a> </Tooltip>
+            <Tooltip placement="top" title={t('citationShow.delete')}><Popconfirm onConfirm={()=> this.confirmdelete(record.id)} title={t('citationShow.areyousure')} okText={t('citationShow.yes')} cancelText={t('citationShow.no')}><a><DeleteOutlined style={{ fontSize: '16px',color: '#ff3a3a' }}/> </a> </Popconfirm></Tooltip>
           </Space>
         ),
       },
     ];
     return (
       <>
-      <Modal footer={null} title="Select Citation Style" visible={this.state.isModalVisible} >
+      <Modal footer={null} title={t('citationShow.citationStyle')} visible={this.state.isModalVisible} >
       <Select
     labelInValue
     style={{ width: 200,textAlign:"left" }}
     onChange={this.handleChange} 
   >
-    <Option value="Chicago">Chicago</Option>
-    <Option value="MLA">MLA</Option>
-    <Option value="APA">APA</Option>
+    <Option value="Chicago">{t('citationShow.chicago')}</Option>
+    <Option value="MLA">{t('citationShow.mLA')}</Option>
+    <Option value="APA">{t('citationShow.aPA')}</Option>
   </Select>
       </Modal>
-      <Button onClick={()=>this.deleteWorkspace()} style={{float:"right",margin:"2px"}} danger>Delete Selected Workspace</Button>
-      <Button onClick={()=>this.editWorkspace()} style={{float:"right",margin:"2px"}} type="primary">Edit Selected Workspace</Button>
+      <Button onClick={()=>this.deleteWorkspace()} style={{float:"right",margin:"2px"}} danger>{t('citationShow.deleteWorkspace')}</Button>
+      <Button onClick={()=>this.deleteWorkspaceWithCitations()} style={{float:"right",margin:"2px"}} danger>{t('citationShow.deleteWorkspacewithcitation')}</Button>
+      <Button onClick={()=>this.editWorkspace()} style={{float:"right",margin:"2px"}} type="primary">{t('citationShow.editWorkspace')}</Button>
       <Table rowKey={'id'}
       columns={columns} dataSource={this.props.selectedCitations}/>
        </>
     );
   }
  }
-
-export default CitationShow
-
-
+export default withTranslation() (CitationShow)
 
 
 

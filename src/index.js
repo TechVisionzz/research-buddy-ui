@@ -2,11 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+import { tokenstore } from './global/global';
 import reportWebVitals from './reportWebVitals';
-import {BrowserRouter} from "react-router-dom";
-
+import './i18n';
+import { ConfigProvider } from 'antd';
 ReactDOM.render(
-    <App />,
+  <ConfigProvider direction={tokenstore.direction}>
+    <App />
+  </ConfigProvider>,
   document.getElementById('root')
 );
 

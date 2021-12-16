@@ -1,15 +1,17 @@
-import React,{createRef} from 'react';
+import React,{createRef,Component, Suspense} from 'react';
+import { withTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Input, Space,Card, Avatar, Col, Row,Button,Modal,Select,message,Spin } from 'antd';
 import { tokenstore } from '../global/global';
 import { createworkspaces,getworkspaces,getPublishersByName,doLogout,getContributors,getContributorsByName,createCitations,createContributors,getPublishers,createPublisher } from './CommonHelper';
-var myself,myform;
+var myself,myform,t;
 
 class SearchBook extends React.Component {
 
   constructor() {
     super();
 myself=this;
+t  = this.props;
 myform=createRef();
     // State of your application
     this.state = {
@@ -36,7 +38,6 @@ myform=createRef();
     if(response && response.data)
     {
       await this.setState({workspacess:response.data});
-      // console.log("workspacess"+this.state.workspacess);
     }
   }).catch(async (error) => {
     console.log(error);
@@ -79,16 +80,12 @@ await  getPublishers().then(async(response)=>
       description:myform.current.getFieldValue('description'),
       parent:myform.current.getFieldValue('parent'),
       user:tokenstore.userid,
-
     }
-      
-  
     createworkspaces(workspace).then(async (response) => {
           if (response && response.data) {
-              // await MySelf.setState({ showSuccess: true, showError: false, rsMessage: t('success_message') });
-              // <Alert message="Data Save Successfully!" type="success" showIcon closable />
       myform.current.resetFields();
-      alert(" Data Save Successfully!");
+      const { t } = this.props;
+      message.success(t('addSuccessMessage'));
               
           }
       }).catch(async (error) => {
@@ -96,15 +93,11 @@ await  getPublishers().then(async(response)=>
           // await MySelf.setState({ showSuccess: false, showError: true, rsMessage: t('error_while_creating_service') });
           alert(error);
       });
-  
-      // this.populateWorkspaces();
-  
-    
   };
    onSearch = async value =>{
    await this.setState({searchTerm:value,isSpinVisible:true});
    const result = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=${this.state.searchTerm}`);
-        // Books result
+        // Books resultw
        await this.setState({bookDetail:result.data.items,isSpinVisible:false});
     // console.log(JSON.stringify(result.data.items[0]));
    }
@@ -131,7 +124,8 @@ await  getPublishers().then(async(response)=>
           }
           await createContributors(contributor).then(async (response) => {
             if (response && response.data) {
-              console.log('auther is created');
+              const { t } = myself.props;
+              message.success(t('addSuccessMessage'));
             }
         })
         }
@@ -159,7 +153,8 @@ await  getPublishers().then(async(response)=>
         }
         await createPublisher(publisher).then(async (response) => {
           if (response && response.data) {
-           console.log('publisher is created');
+            const { t } = myself.props;
+            message.success(t('addSuccessMessage'));
           }
       })
   }
@@ -167,7 +162,6 @@ await  getPublishers().then(async(response)=>
   await  getPublishersByName(selectedItem.volumeInfo.publisher).then(async(response)=> {
     if(response && response.data){
       await  this.setState({publisherByName: [...this.state.publisherByName,...[response.data[0].id] ]});
-      // console.log(this.state.publisherByName);
     }
   }).catch(async (error) => {
     console.log(error);
@@ -189,7 +183,8 @@ await  getPublishers().then(async(response)=>
 console.log(citation);
   await createCitations(citation).then(async (response) => {
           if (response && response.data) {
-            message.success('Data Added Successfully!');
+            const { t } = myself.props;
+            message.success(t('addSuccessMessage'));
           }
       })
      
@@ -202,6 +197,8 @@ console.log(citation);
 
   }
   render() {
+     //this is set for translation
+ const { t } = this.props;
     const { Option } = Select;
     const { Meta } = Card;
     const { Search } = Input;
@@ -209,7 +206,7 @@ console.log(citation);
     return (
       <div>
         <Spin size="large"  spinning={this.state.isSpinVisible} >
-            <Modal onCancel={()=>this.setState({isModalVisible:false})} footer={null} title="Select Workspace Against Citation" visible={this.state.isModalVisible} >
+            <Modal onCancel={()=>this.setState({isModalVisible:false})} footer={null} title={t('searchBook.selectWorkspace')} visible={this.state.isModalVisible} >
       <Select
     labelInValue
     style={{ width: 200,textAlign:"left" }}
@@ -222,7 +219,7 @@ console.log(citation);
   </Select>
       </Modal>
       <Space direction="vertical">
-      <Search placeholder="input book name"  onSearch={this.onSearch} enterButton />
+      <Search placeholder={t('searchBook.inputBookName')}  onSearch={this.onSearch} enterButton />
     </Space>
     <div className="site-card-wrapper">
     <Row gutter={16}>
@@ -237,7 +234,7 @@ console.log(citation);
        />
      }
      actions={[
-      <Button id={bookDetail.id} onClick={()=>this.showStyleModel(bookDetail.id)} type="primary" size={"small"}>Add to my collection</Button>
+      <Button id={bookDetail.id} onClick={()=>this.showStyleModel(bookDetail.id)} type="primary" size={"small"}>{t('searchBook.addcollection')}</Button>
      ]}
    >
      <Meta
@@ -255,6 +252,4 @@ console.log(citation);
   }
  }
 
-export default SearchBook
-
-
+export default withTranslation()(SearchBook)

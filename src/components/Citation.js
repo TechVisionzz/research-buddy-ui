@@ -1,14 +1,23 @@
-import React,{createRef} from 'react';
+import React,{createRef,Component, Suspense} from 'react';
+import { withTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import axios from 'axios';
 import {  Input, Button,DatePicker,Select,message } from 'antd';
 import { Alert } from 'antd';
+import { createHashHistory } from 'history'
+// import { browserHistory } from 'react-router'
+import { withRouter } from "react-router-dom";
+// import { useNavigate } from 'react-router-dom';
 import { tokenstore } from '../global/global';
-import Form from "@rjsf/antd";
+import Form from "@rjsf/core";
 import '../css/general.css';
-import {getworkspaces,doLogout,createCitations,getContributors,getPublishers} from './CommonHelper';
+import GooglePicker from 'react-google-picker';
+import {getworkspaces,doLogout,createCitations,getTags,getContributors,getPublishers,getDefaultWorkspaceId} from './CommonHelper';
 import '../css/citation.css';
+
 import { version } from 'typescript';
 var myself,myform;
+var fileId,iconUrl,downloadUrl;
 
 class Citation extends React.Component {
   constructor(props) {
@@ -28,22 +37,138 @@ myform=createRef();
         publishers: '',
         workspaces: '',
       },
-      workspacess: [],
+      workspacessName: [],
+      workspacessId: [],
+      tagName: [],
+      tagId: [],
       contributorssName:[],
       contributorssId:[],
       publisherssName:[],
       publisherssId:[],
       error: null,
+      getDefaultWorkspaceId:'',
+      fileName:''
     };
+
+
+
   }
-   onSubmit = ({formData}, e) => 
+//fetch workspaces from db
+async getWorkspaces()
+{
+      await getworkspaces().then((response) => {
+        if (response && response.data) {
+            this.setState({workspacessName: response.data.map(item=>item.name) });
+            this.setState({workspacessId: response.data.map(item=>item.id.toString())});
+        }
+    },
+    )
+    .catch(async (error) => {
+        console.log(error);
+        await doLogout();
+    });
+}  
+//GetTags from db
+async getTags(){
+        await getTags().then((response) => {
+          if (response && response.data) {
+              this.setState({tagName: response.data.map(item=>item.name) });
+              this.setState({tagId: response.data.map(item=>item.id.toString())});
+          }
+      },
+      )
+      .catch(async (error) => {
+          console.log(error);
+          await doLogout();
+      });
+}
+//fetch contributors from strapi db
+async getConttibutors()
+{
+  await getContributors().then(async(response) => {
+    if (response && response.data) {
+      await  this.setState({contributorssName: response.data.map(item=>item.firstname)});
+      await  this.setState({contributorssId: response.data.map(item=>item.id.toString())});
+    }
+},
+)
+.catch(async (error) => {
+    console.log(error);
+    await doLogout();
+});
+}
+//fetch publishers from strapi db
+async getPublishers()
+{
+  await getPublishers().then(async(response) => {
+    if (response && response.data) {
+      await  this.setState({publisherssName: response.data.map(item=>item.name)});
+      await  this.setState({publisherssId: response.data.map(item=>item.id.toString())});
+    }
+},
+)
+.catch(async (error) => {
+    console.log(error);
+    await doLogout();
+});
+}
+  componentDidMount = async () => {
+    this.getWorkspaces();
+    this.getTags();
+    this.getConttibutors();
+    this.getPublishers();
+  };
+   onSubmit = async({formData}, e) => 
    {
      console.log(formData);
-      //json object fetch the form value and assign it to database attribute
-    var citation={
+     if(!formData.workspace)
+     {
+      await getDefaultWorkspaceId().then(async(response) => {
+        if (response && response.data) {
+          console.log(response.data);
+         await this.setState({getDefaultWorkspaceId:response.data.map((item)=>item.id)});
+         console.log(this.state.getDefaultWorkspaceId);
+          formData.workspace=this.state.getDefaultWorkspaceId;
+      console.log(formData.workspace);
+        }
+    },
+    )
+    .catch(async (error) => {
+        console.log(error);
+        await doLogout();
+    });
+     }
+    //  var a=document.getElementById('root__anyof_select').value;
+     var a=0;
+     if(a==0){ a="Bill";}
+     if(a==1){ a="Book";}
+     if(a==2){ a="Book Section";}
+     if(a==3){ a="Case";}
+     if(a==4){ a="Computer Program";}
+     if(a==5){ a="Conference Proceedings";}
+     if(a==6){ a="Encyclopedia Article";}
+     if(a==7){ a="Film";}
+     if(a==8){ a="Hearing";}
+     if(a==9){ a="Journal Article";}
+     if(a==10){ a="Magazine Article";}
+     if(a==11){ a="Newspaper Article";}
+     if(a==12){ a="Patent";}
+     if(a==13){ a="Report";}
+     if(a==14){ a="Statute";}
+     if(a==15){ a="Television Broadcast";}
+     if(a==16){ a="Thesis";}
+     if(a==17){ a="Unspecified";}
+     if(a==18){ a="Web Page";}
+     if(a==19){ a="Working Paper";}
+    // this is attach /dashboard  to current url
+    // const history = createHashHistory();
+     var citation={
+      fileId:fileId,
+      iconUrl:iconUrl,
+      downloadUrl:downloadUrl,
       identifier:formData.identifiers,
       title:formData.title,
-      type:formData.type,
+      type:a,
       contributors:formData.author,
       year:formData.year,
       codepages:formData.codepages,
@@ -81,82 +206,51 @@ myform=createRef();
       thesistype:formData.thesistype,
       typeofwork:formData.typeofwork,
       series:formData.series,
-
-
+      workspaces:formData.workspace,
+      tags:formData.tags,
     }
     console.log(citation);
     createCitations(citation).then(async (response) => {
       if (response && response.data) {
-  message.success('Citation Added Successfully!');
-  myself.props.history.push('/dashboard');
+        const { t } = this.props;
+        message.success(t('addSuccessMessage'));
+        this.getWorkspaces();
+        this.getTags();
+        this.getConttibutors();
+        this.getPublishers();
       }
   }).catch(async (error) => {
       console.log(error);
   });
    };
    onError = (errors) => console.log("I have", errors.length, "errors to fix");
-  componentDidMount = async () => {
-    await getworkspaces().then((response) => {
-      if (response && response.data) {
-          this.setState({workspacess: response.data });
-      }
-  },
-  )
-  .catch(async (error) => {
-      console.log(error);
-      await doLogout();
-      // this.props.checkLogin();
-  });
-  //fetch contributors from strapi db
-  await getContributors().then(async(response) => {
-    if (response && response.data) {
-      await  this.setState({contributorssName: response.data.map(item=>item.firstname)});
-      await  this.setState({contributorssId: response.data.map(item=>item.id.toString())});
-    }
-},
-)
-.catch(async (error) => {
-    console.log(error);
-    await doLogout();
-    // this.props.checkLogin();
-});
-  //fetch publishers from strapi db
-  await getPublishers().then(async(response) => {
-    if (response && response.data) {
-      await  this.setState({publisherssName: response.data.map(item=>item.name)});
-      await  this.setState({publisherssId: response.data.map(item=>item.id.toString())});
-    }
-},
-)
-.catch(async (error) => {
-    console.log(error);
-    await doLogout();
-});
-  };
   render() {
+
+        //this is set for translation
+        const { t } = this.props;
 //declare properties for common use in multiple properties
   var header={
     "title": {
       "type": "string",
-      "title": "Title"
+      "title": t('citation.title')
     },
     "year": {
       "type": "string",
-      "title": "Year"
+      "title": t('citation.year')
     },
     "codepages": {
-      "type": "string",
-      "title": "Code Pages"
+      "type": "number",
+      "title": t('citation.codePages')
     }
 };
 var common={
   "pages": {
     "type": "string",
-    "title": "Pages"
+    "title": t('citation.pages')
   },
 "author": {
 "type": "array",
-"title": "Author",
+"title": t('citation.author'),
 "items": {
 "type": "string",
 "enum":this.state.contributorssId,
@@ -166,7 +260,7 @@ var common={
 },
 "publisher": {
   "type": "array",
-"title": "Publisher",
+"title": t('citation.publisher'),
 "items": {
   "type": "string",
   "enum":this.state.publisherssId,
@@ -176,57 +270,57 @@ var common={
 },
 "code": {
   "type": "string",
-  "title": "Code"
+  "title": t('citation.code')
 },
 "city": {
   "type": "string",
-  "title": "City"
+  "title": t('citation.city')
 },
 "volume": {
   "type": "string",
-  "title": "Volume"
+  "title": t('citation.volume')
 },
 "edition": {
   "type": "string",
-  "title": "Edition"
+  "title": t('citation.edition')
 },
 "editors": {
   "type": "string",
-  "title": "Editors"
+  "title": t('citation.editors')
 },
 "country": {
   "type": "string",
-  "title": "Country"
+  "title": t('citation.country')
 },
 "publication": {
   "type": "string",
-  "title": "Publication"
+  "title": t('citation.publication')
 },
 "institution": {
   "type": "string",
-  "title": "Institution"
+  "title": t('citation.institution')
 },
 "distributor": {
   "type": "string",
-  "title": "Distributor"
+  "title": t('citation.distributor')
 },
 "number": {
   "type": "string",
-  "title": "Number"
+  "title": t('citation.number')
 }
 };
 var footer={
   "month": {
     "type": "string",
-    "title": "Month"
+    "title": t('citation.month')
   },
   "day": {
     "type": "string",
-    "title": "Day"
+    "title": t('citation.day')
   },
   "abstract": {
     "type": "string",
-    "title": "Abstract"
+    "title": t('citation.abstract')
   }
 
 };
@@ -257,7 +351,7 @@ var footer={
       ],
       "anyOf": [//Bill
         {
-          "title": "Bill",
+          "title": t('citation.bill'),
           "properties": {
             title,author,
             year,
@@ -265,7 +359,7 @@ var footer={
             city,
             "legislativeBody": {
               "type": "string",
-              "title": "Legislative Body"
+              "title": t('citation.legislativeBody')
             },
             code,
             month,day,abstract
@@ -273,7 +367,7 @@ var footer={
           
         },//Book
         {
-          "title": "Book",
+          "title": t('citation.book'),
           "properties": {
             title,
            author,year,
@@ -286,7 +380,7 @@ var footer={
           }
         },//Book Section
         {
-          "title": "Book Section",
+          "title": t('citation.bookSection'),
           "properties": {
             title,
            author,
@@ -294,7 +388,7 @@ var footer={
             pages,
             "book": {
               "type": "string",
-              "title": "Book Name"
+              "title": t('citation.bookName')
             },
             volume,
             edition,
@@ -303,12 +397,12 @@ var footer={
             publisher,
             "chapter": {
               "type": "string",
-              "title": "Chapter"
+              "title": t('citation.chapter')
             },month,day,abstract
           }
         },//Case
         {
-          "title": "Case",
+          "title": t('citation.case'),
           "properties": {
             title,
            author,year,
@@ -317,7 +411,7 @@ var footer={
           }
         },//Computer Program
         {
-          "title": "Computer Program",
+          "title": t('citation.computerProgram'),
           "properties": {
             title,
            author,year,
@@ -326,18 +420,18 @@ var footer={
             publisher,
             "version": {
               "type": "string",
-              "title": "Version"
+              "title": t('citation.version')
             },month,day,abstract
           }
         },//Conference Proceedings
         {
-          "title": "Conference Proceedings",
+          "title": t('citation.conferenceProceedings'),
           "properties": {
             title,
            author,
             "proctitle": {
               "type": "string",
-              "title": "Proc.Title"
+              "title": t('citation.procTitle')
             },year,
             pages,
             editors,
@@ -346,13 +440,13 @@ var footer={
           }
         },//Encyclopedia Article
         {
-          "title": "Encyclopedia Article",
+          "title": t('citation.encyclopediaArticle'),
           "properties": {
             title,
            author,
             "encyclopedia": {
               "type": "string",
-              "title": "Encyclopedia"
+              "title": t('citation.encyclopedia')
             },year,
             pages,
             volume,
@@ -363,7 +457,7 @@ var footer={
           }
         },//Film
         {
-          "title": "Film",
+          "title": t('citation.film'),
           "properties": {
             title,
            author,year,
@@ -373,7 +467,7 @@ var footer={
           }
         },//Hearing
         {
-          "title": "Hearing",
+          "title": t('citation.hearing'),
           "properties": {
             title,
            author,year,
@@ -383,24 +477,24 @@ var footer={
           }
         },//Journal Article
         {
-          "title": "Journal Article",
+          "title": t('citation.journalArticle'),
           "properties": {
             title,
            author,
             "journal": {
               "type": "string",
-              "title": "Journal"
+              "title": t('citation.journal')
             },year,
             pages,
             volume,
             "issue": {
               "type": "string",
-              "title": "Issue"
+              "title": t('citation.issue')
             },month,day,abstract
           }
         },//Magazine Article
         {
-          "title": "Magazine Article",
+          "title": t('citation.magazineArticle'),
           "properties": {
             title,
            author,
@@ -410,7 +504,7 @@ var footer={
           }
         },//Newspaper Article
         {
-          "title": "Newspaper Article",
+          "title": t('citation.newspaperArticle'),
           "properties": {
             title,
            author,
@@ -420,26 +514,26 @@ var footer={
           }
         },//Patent
         {
-          "title": "Patent",
+          "title": t('citation.patent'),
           "properties": {
             title,
            author,year,
             pages,
             "issuer": {
               "type": "string",
-              "title": "Issuer"
+              "title": t('citation.issuer')
             },
             institution,
             country,
             number,
             "assignee": {
               "type": "string",
-              "title": "Assignee"
+              "title": t('citation.assignee')
             },month,day,abstract
           }
         },//Report
         {
-          "title": "Report",
+          "title": t('citation.report'),
           "properties": {
             title,
            author,year,
@@ -449,7 +543,7 @@ var footer={
           }
         },//Statute
         {
-          "title": "Statute",
+          "title": t('citation.statute'),
           "properties": {
             title,
            author,
@@ -457,18 +551,18 @@ var footer={
             pages,
             "source": {
               "type": "string",
-              "title": "Source"
+              "title": t('citation.source')
             },
             country,
             "statutenumber": {
               "type": "string",
-              "title": "Statute Number"
+              "title": t('citation.statuteNumber')
             },
             code,month,day,abstract
           }
         },//Television Broadcast
         {
-          "title": "Television Broadcast",
+          "title": t('citation.televisionBroadcast'),
           "properties": {
             title,
            author,year,
@@ -478,7 +572,7 @@ var footer={
           }
         },//Thesis
         {
-          "title": "Thesis",
+          "title": t('citation.thesis'),
           "properties": {
             title,
            author,year,
@@ -487,16 +581,16 @@ var footer={
             institution,
             "department": {
               "type": "string",
-              "title": "Department"
+              "title": t('citation.department')
             },
             "thesistype": {
               "type": "string",
-              "title": "Type"
+              "title": t('citation.thesisType')
             },month,day,abstract
           }
         },//Unspecified
         {
-          "title": "Unspecified",
+          "title": t('citation.unspecified'),
           "properties": {
             title,
            author,
@@ -505,18 +599,18 @@ var footer={
             volume,
             "issue": {
               "type": "string",
-              "title": "Issue"
+              "title": t('citation.issue')
             },
             city,
             publisher,
             "typeofwork": {
               "type": "string",
-              "title": "Type Of Work"
+              "title": t('citation.typeOfWork')
             },month,day,abstract
           }
         },//Web Page
         {
-          "title": "Web Page",
+          "title": t('citation.webPage'),
           "properties": {
             title,
            author,
@@ -525,7 +619,7 @@ var footer={
           }
         },//Working Paper
         {
-          "title": "Working Paper",
+          "title": t('citation.workingPaper'),
           "properties": {
             title,
            author,year,
@@ -535,40 +629,109 @@ var footer={
             number,
             "series": {
               "type": "string",
-              "title": "Series"
+              "title": t('citation.series')
             },month,day,abstract
           }
         }
       ],
       "properties": {
+        "workspace": {
+          "title": t('citation.workspace'),
+          "type": "string",
+          "enum":this.state.workspacessId,
+          "enumNames":this.state.workspacessName,
+          "uniqueItems": true,
+          "default":["Default Workspace"]
+          },
         "Reference":{
           "type": "string",
-          "title":"Reference"
+          "title":t('citation.reference')
         },
         "identifiers": {
           "type": "string",
-          "title": "Identifiers (ArXivID, DOI or PMID)",
-          "default": "ali"
-          
-        }
+          "title": t('citation.identifiers')
+        },
+         "tags": {
+          "type": "array",
+          "title": t('citation.tags'),
+          "items": {
+          "type": "string",
+          "enum":this.state.tagId,
+          "enumNames":this.state.tagName
+          },
+          "uniqueItems": true
+          },
+          "file": {
+            "type": "string",
+            "title": 'Attach File',
+            "default":this.state.fileName
+          },
       }
     };
   var   uiSchema = {
-   
-      "ui:order": ["identifiers","*"],
-      "abstract": {
-        "ui:widget": "textarea"
-      }
-      
+      "ui:order": ["workspace","identifiers","file","tags","*"],
+      "abstract": {"ui:widget": "textarea"},
+      "file":{"ui:widget": "myCustomWidget"}
+    };
+    const MyCustomWidget = (props) => {
+      return (
+        <GooglePicker clientId={'618059557346-ug58hled8h04q7sb7rfnigsovnpvbbos.apps.googleusercontent.com'}
+              developerKey={'AIzaSyC9fjw10KsfVew6un3wyNn9gVRRy4Npr48'}
+              scope={['https://www.googleapis.com/auth/drive']}
+              onChange={data => console.log('on change:', data)}
+              onAuthFailed={data => console.log('on auth failed:', data)}
+              multiselect={true}
+              navHidden={true}
+              authImmediate={false}
+              viewId={'DOCS'}
+              createPicker={ (google, oauthToken) => {
+                        const googleViewId = google.picker.ViewId.DOCS;
+                        const uploadView = new google.picker.DocsUploadView();
+                        const docsView = new google.picker.DocsView(googleViewId)
+                            .setIncludeFolders(true)
+                            .setSelectFolderEnabled(true);
+
+                const picker = new window.google.picker.PickerBuilder()
+                    .addView(docsView)
+        .addView(uploadView)
+                    .setOAuthToken(oauthToken)
+                    // .setDeveloperKey('AIzaSyC9fjw10KsfVew6un3wyNn9gVRRy4Npr48')
+                    .setCallback(async(data)=>{
+                      if (data.action == google.picker.Action.PICKED) {
+                        console.log(data);
+                                           fileId = data.docs[0].id;
+                                           iconUrl = data.docs[0].iconUrl;
+                                           if(data.docs[0].embedUrl){
+                                            downloadUrl=data.docs[0].embedUrl;
+                                           }
+                                           if(data.docs[0].downloadUrl){
+                                            downloadUrl=data.docs[0].downloadUrl;
+                                           }
+                                          await this.setState({fileName:data.docs[0].name})
+                                           message.success("File Uploaded Successfully!");
+                                      }
+                    });
+                picker.build().setVisible(true);
+            }}
+        >
+            <span><button type="button" >Upload File </button><span className="filemargin">{
+            this.state.fileName}</span></span>
+            <div className="google"></div>
+        </GooglePicker>
+      );
+    };
+    const widgets = {
+      myCustomWidget: MyCustomWidget
     };
     //apply ui schema in future for responsiveness and grid system
-    
   return (
-      <Form schema={schema} uiSchema={uiSchema}  onError={this.onError} onSubmit={this.onSubmit}/>
+    <div>
+      <Form schema={schema} widgets={widgets}  uiSchema={uiSchema}  onError={this.onError} onSubmit={this.onSubmit}/>
+     
+        </div>
     );
   }
  }
-
-export default Citation
+export default withTranslation()(Citation)
 
 

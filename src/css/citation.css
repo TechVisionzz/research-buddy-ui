@@ -2,29 +2,42 @@
     float: left;
 }
 
-label[title="Bill"],
-label[title="Book"],
-label[title="Book Section"],
-label[title="Case"],
-label[title="Computer Program"],
-label[title="Conference Proceedings"],
-label[title="Encyclopedia Article"],
-label[title="Film"],
-label[title="Hearing"],
-label[title="Journal Article"],
-label[title="Newspaper Article"],
-label[title="Magazine Article"],
-label[title="Patent"],
-label[title="Report"],
-label[title="Statute"],
-label[title="Television Broadcast"],
-label[title="Thesis"],
-label[title="Unspecified"],
-label[title="Web Page"],
-label[title="Working Paper"] {
+.form-group .field .field-string label[for="root_workspace"] {
+    display: none;
+}
+
+.form-group .field .field-string label[for="root_identifiers"] {
+    display: none;
+}
+
+.form-group .field .field-string input[id="root_identifiers"] {
+    display: none;
+}
+
+.form-group .field .field-string select[id="root_workspace"] {
+    display: none;
+}
+
+.form-group .field .field-array select[id="root_tags"] {
+    display: none;
+}
+
+.form-group .field .field-array label[for="root_tags"] {
+    display: none;
+}
+
+legend[id="root__title"] {
     display: none;
 }
 
 input#root_Reference {
     display: none;
+}
+
+label.control-label {
+    float: left;
+}
+
+.filemargin {
+    margin-left: 10px;
 }

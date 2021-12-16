@@ -1,4 +1,5 @@
-import React,{createRef} from 'react';
+import React,{createRef,Component, Suspense} from 'react';
+import { withTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Form, Input, Button, message } from 'antd';
 import { tokenstore } from '../global/global';
@@ -26,10 +27,9 @@ myself=this;
      await editWorkspace().then(async (response)=>{
        if(response && response.data)
        {
-         await this.setState({modifiedData:response.data});
+          await this.setState({modifiedData:response.data});
        }
      console.log(this.modifiedData);
-
      })
      .catch(async(error)=>{
       console.log(error);
@@ -54,8 +54,9 @@ myself=this;
     editWorkspace(workspace).then(async (response) => {
           if (response && response.data) {
           myform.current.resetFields();
-          message.success('Workspace Edit Successfully!');
-          myself.props.history.push('/dashboard');
+          const { t } = myself.props;
+      message.success(t('editSuccessMessage'));
+      myself.props.updateText("updated state from child component");
           }
       }).catch(async (error) => {
           console.log(error);
@@ -63,6 +64,8 @@ myself=this;
       });
   };
   render() {
+     //this is set for translation
+ const { t } = this.props;
     const { error, modifiedData } = this.state;
     const onFinish = (values) => {
       console.log('Success:', values);
@@ -74,29 +77,27 @@ myself=this;
 
     // Print errors if any
     if (error) {
-      return <div>An error occured: {error.message}</div>;
+      return <div>{t('workspace.error')}{error.message}</div>;
     }
     return (
-      
       <Form ref={myform} name="basic" labelCol={{span: 8,}} wrapperCol={{span: 16, }}initialValues={{remember: true, }}onFinish={onFinish}onFinishFailed={onFinishFailed}autoComplete="off">
-      <Form.Item label="Name" name="name" id="name"rules={[ { required: true, message: 'Please input your Name!',},]}value={modifiedData.name} >
+      <Form.Item label="Name" name="name" id="name"rules={[ { required: true, message: t('workspace.namePlaceHolder')},]}value={modifiedData.name} >
         <Input />
       </Form.Item>
       <Form.Item
-        label="Description"
+        label={t('workspace.descriptionLabel')}
         name="description"
         rules={[
           {
             required: true,
-            message: 'Please input your Description!',
-          },
+            message: t('workspace.descriptionPlaceholder'),          },
         ]}
         value={modifiedData.description}
       >
         <Input.TextArea />
       </Form.Item>
       <Form.Item
-        label="Parent"
+        label={t('workspace.parentLabel')}
         name="parent"
         rules={[
           {
@@ -115,14 +116,11 @@ myself=this;
         }}
       >
         <Button onClick={this.handleSubmit} type="primary" htmlType="submit" style={{float:"left"}}>
-          Edit
+        {t('workspace.edit')}
         </Button>
       </Form.Item>
     </Form>
     );
   }
  }
-
-export default WorkspaceEdit
-
-
+ export default withTranslation()(WorkspaceEdit);
