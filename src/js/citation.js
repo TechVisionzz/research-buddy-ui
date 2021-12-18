@@ -22,6 +22,6 @@ export function setvalue(a) {
     if (document.readyState === 'complete') {
       clearInterval(stateCheck);
       // document ready
-      alert("onreadystatechange");
+      //alert("onreadystatechange");
     }
   }, 100);
