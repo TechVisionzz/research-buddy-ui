@@ -1,16 +1,25 @@
-.backgroundsetting {
-    margin: 5px;
-    background-color: rgb(187, 212, 212);
+#components-form-demo-normal-login .login-form {
+    max-width: 300px;
 }
 
-form#basic {
-    padding: 5px;
-    padding-top: 39px;
-    width: 80%;
+#components-form-demo-normal-login .login-form-forgot {
+    float: right;
 }
 
-.login {
-    font-size: 25px;
-    font-weight: 400;
-    margin-left: -50 px;
+#components-form-demo-normal-login .ant-col-rtl .login-form-forgot {
+    float: left;
+}
+
+#components-form-demo-normal-login .login-form-button {
+    width: 100%;
+}
+
+.logIn {
+    background-color: #f5f5ff;
+    padding: 30px;
+    border-radius: 5px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -180px 0 0 -150px;
 }

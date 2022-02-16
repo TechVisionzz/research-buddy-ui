@@ -1416,7 +1416,7 @@ var CHICAGO_TEMPLATE = `<?xml version="1.0" encoding="utf-8"?>
     </layout>
   </bibliography>
 </style>`;
-var MLA_TEMPLATE=`<?xml version="1.0" encoding="utf-8"?>
+var MLA_TEMPLATE = `<?xml version="1.0" encoding="utf-8"?>
 <style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="sort-only" page-range-format="minimal" default-locale="en-GB">
   <info>
     <title>Cardiff University - Vancouver</title>
@@ -1753,7 +1753,7 @@ var MLA_TEMPLATE=`<?xml version="1.0" encoding="utf-8"?>
     </layout>
   </bibliography>
 </style>`;
-var APA_TEMPLATE=`<?xml version="1.0" encoding="utf-8"?>
+var APA_TEMPLATE = `<?xml version="1.0" encoding="utf-8"?>
 <style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="never" page-range-format="expanded">
   <info>
     <title>American Psychological Association 6th edition</title>
@@ -3319,16 +3319,14 @@ var APA_TEMPLATE=`<?xml version="1.0" encoding="utf-8"?>
     </layout>
   </bibliography>
 </style>`;
-export const getTemplate =  ((type) => {
-
-  if(type === 'Chicago') {
-      return CHICAGO_TEMPLATE;
+export const getTemplate = (type: any) => {
+  if (type === "Chicago") {
+    return CHICAGO_TEMPLATE;
   }
-  if(type === 'MLA') {
+  if (type === "MLA") {
     return MLA_TEMPLATE;
-}
-if(type==="APA")
-{
-  return APA_TEMPLATE;
-}
-  });
+  }
+  if (type === "APA") {
+    return APA_TEMPLATE;
+  }
+};

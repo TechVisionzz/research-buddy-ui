@@ -1,2 +1,5 @@
-let  tokenstore=window.sessionStorage;
-export {tokenstore}
+export class GlobalVars {
+  static collectionId;
+  static referenceId;
+  static editReferenceId;
+}
