@@ -7,7 +7,7 @@ import {
   Route,
   Switch,
 } from "react-router-dom";
-import "./css/LogIn.css";
+import "./css/login.css";
 import LogIn from "./components/LogIn";
 import SignUp from "./components/SignUp";
 import Main from "./components/MainPage";
