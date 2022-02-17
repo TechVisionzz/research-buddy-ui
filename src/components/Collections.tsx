@@ -9,7 +9,7 @@ import {
   message,
   Spin,
 } from "antd";
-import "../css/LogIn.css";
+import "../css/login.css";
 import {
   createCollection,
   editCollection,
