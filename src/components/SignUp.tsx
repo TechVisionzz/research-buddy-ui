@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Form, Input, Button, Spin } from "antd";
-import "../css/LogIn.css";
+import "../css/login.css";
 import { message } from "antd";
 import { Link, withRouter } from "react-router-dom";
 import { MailOutlined } from "@ant-design/icons";
