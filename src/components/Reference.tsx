@@ -10,7 +10,7 @@ import {
   message,
   Spin,
 } from "antd";
-import "../css/LogIn.css";
+import "../css/login.css";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import Search from "antd/lib/input/Search";
 import { createReference } from "./commonHelper";
