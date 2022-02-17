@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { Form, Input, Button, Checkbox, Spin, message } from "antd";
 import { Link, withRouter } from "react-router-dom";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import "../css/LogIn.css";
+import "./css/login.css";
 import { isLoggedIn, logIn } from "./commonHelper";
 var myself: any;
 class Login extends Component<any, any> {
