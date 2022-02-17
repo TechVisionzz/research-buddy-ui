@@ -13,7 +13,7 @@ import {
   Modal,
   Popconfirm,
 } from "antd";
-import "../css/LogIn.css";
+import "../css/login.css";
 import { SearchOutlined, DownOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import {
