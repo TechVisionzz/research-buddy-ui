@@ -1,6 +1,14 @@
 import React, { Component } from "react";
-import { Layout, Menu, Dropdown, Typography, message } from "antd";
-import { PlusCircleOutlined } from "@ant-design/icons";
+import {
+  Layout,
+  Menu,
+  Dropdown,
+  Typography,
+  message,
+  notification,
+  Tree,
+} from "antd";
+import { PlusCircleOutlined, DownOutlined } from "@ant-design/icons";
 import { Link, withRouter } from "react-router-dom";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import "../css/common.css";
@@ -10,6 +18,9 @@ import Reference from "./Reference";
 import AllReferences from "./AllReferences";
 import Collections from "./Collections";
 import { deleteCollection, getCollections } from "./commonHelper";
+import { t } from "i18next";
+import { withTranslation } from "react-i18next";
+import SubMenu from "antd/lib/menu/SubMenu";
 var myself: any;
 class DashBoard extends Component<any, any> {
   constructor(props: any) {
@@ -29,15 +40,19 @@ class DashBoard extends Component<any, any> {
     this.openEditCollection = this.openEditCollection.bind(this);
     this.closeReference = this.closeReference.bind(this);
     this.closeCollections = this.closeCollections.bind(this);
+    this.parentMenu = this.parentMenu.bind(this);
   }
   getCollections = async () => {
     this.setState({ isSpinVisible: true });
     await getCollections()
-      .then((response: any) => {
-        this.setState({ collections: response.data });
+      .then(async (response: any) => {
+        if (response && response.data) {
+          console.log(response.data);
+          await this.setState({ collections: response.data });
+        }
       })
-      .catch(async (error) => {
-        message.error(error.error.message);
+      .catch(async (error: any) => {
+        message.error(error.error);
         this.setState({ isSpinVisible: false });
       });
   };
@@ -82,39 +97,109 @@ class DashBoard extends Component<any, any> {
     this.setState({ isSpinVisible: true });
     await deleteCollection()
       .then((response: any) => {
-        message.success("Delete Successfully!");
-        this.getCollections();
+        if (response && response.data) {
+          console.log(response.data);
+          var arrayLength;
+          if (response.data.attributes.collections.data.length >= 1) {
+            response.data.attributes.collections.data.map((item: any) => {
+              GlobalVars.collectionId = item.id;
+              this.deleteCollection();
+            });
+          }
+          message.success(t("deleteSuccess"));
+          this.getCollections();
+          this.openNotification(response.data.attributes.name);
+        }
       })
       .catch(async (error: any) => {
         message.error(error);
         this.setState({ isSpinVisible: false });
       });
   };
+  openNotification = (name: any) => {
+    const args = {
+      message: "Note",
+      description:
+        " References under " + name + " collection is move to All Refereces!",
+      duration: 0,
+    };
+    notification.open(args);
+  };
+  onSelect = (selectedKeys: any, info: any) => {
+    console.log("selected", selectedKeys, info);
+  };
+  getMenu = (text: any, id: any) => {
+    return (
+      <Dropdown
+        key={id}
+        overlay={this.collectionMenu}
+        trigger={["contextMenu"]}
+      >
+        <span onClick={() => this.callReference(id)} style={{ float: "left" }}>
+          {text}
+        </span>
+      </Dropdown>
+    );
+  };
+  parentMenu = (item: any) => {
+    return (
+      <>
+        <SubMenu
+          key={item.id}
+          title={this.getMenu(item.attributes.name, item.id)}
+        >
+          {item.attributes.collections.data.map((item2: any) => {
+            var a = this.state.collections.find(
+              (collection: any) => collection.id === item2.id
+            );
+            if (a) {
+              if (a.attributes.collections.data[0]) {
+                return this.parentMenu(a);
+              }
+            }
+
+            if (item2.attributes.trash === false) {
+              return (
+                <Menu.Item
+                  onClick={() => this.callReference(item2.id)}
+                  key={item2.id}
+                >
+                  <Dropdown
+                    key={item2.id}
+                    overlay={this.collectionMenu}
+                    trigger={["contextMenu"]}
+                  >
+                    <span>{item2.attributes.name}</span>
+                  </Dropdown>
+                </Menu.Item>
+              );
+            }
+          })}
+        </SubMenu>
+      </>
+    );
+  };
+  collectionMenu = (
+    <Menu>
+      <Menu.Item onClick={this.openEditCollection} key="1">
+        {t("edit")}
+      </Menu.Item>
+      <Menu.Item onClick={this.deleteCollection} key="2">
+        {t("delete")}
+      </Menu.Item>
+    </Menu>
+  );
   render() {
+    const { SubMenu } = Menu;
     const menu = (
       <Menu onClick={this.handleMenuClick}>
-        <Menu.Item key="1">File(s) from computer</Menu.Item>
         <Menu.Item onClick={this.openCitation} key="2">
-          Add Entry manually
+          {t("dashboard.AddEntrymanually")}
         </Menu.Item>
-        <Menu.Item key="3">Import library</Menu.Item>
       </Menu>
     );
     const { Content, Sider } = Layout;
     const { Title } = Typography;
-    const collectionMenu = (
-      <Menu>
-        <Menu.Item onClick={this.openEditCollection} key="1">
-          Edit
-        </Menu.Item>
-        <Menu.Item onClick={this.deleteCollection} key="2">
-          Delete
-        </Menu.Item>
-        {/* <Menu.Item onClick={this.openAddCollection} key="3">
-          New Collection
-        </Menu.Item> */}
-      </Menu>
-    );
     return (
       <Layout>
         <AppMenu />
@@ -122,37 +207,56 @@ class DashBoard extends Component<any, any> {
           <Sider width={200} className="site-layout-background">
             <Menu mode="inline" style={{ height: "100%", borderLeft: 0 }}>
               <Menu.Item key="1">
-                <Dropdown.Button overlay={menu}>Add New</Dropdown.Button>
+                <Dropdown.Button overlay={menu}>
+                  {t("dashboard.AddNew")}
+                </Dropdown.Button>
               </Menu.Item>
               <Menu.Item onClick={() => this.callReference("all")} key="2">
-                <Link to="#">All References</Link>
+                <Link to="#">{t("dashboard.AllReferences")}</Link>
               </Menu.Item>
               <Menu.Item onClick={() => this.callReference("trash")} key="3">
-                <Link to="#">Trash</Link>
+                <Link to="#">{t("Trash")}</Link>
               </Menu.Item>
               <Menu.Item onClick={this.openAddCollection} key="4">
                 <Link to="#">
                   <Title className="collectionsInline" level={5}>
-                    Collections
+                    {t("Collections")}
                   </Title>
                   <PlusCircleOutlined />
                 </Link>
               </Menu.Item>
               {this.state.collections.map((item: any) => {
-                return (
-                  <Menu.Item
-                    onClick={() => this.callReference(item.id)}
-                    key={item.id}
-                  >
-                    <Dropdown
+                if (
+                  item.attributes.parent.data === null &&
+                  !item.attributes.collections.data[0]
+                ) {
+                  console.log(item);
+                }
+                if (
+                  item.attributes.parent.data === null &&
+                  !item.attributes.collections.data[0]
+                ) {
+                  return (
+                    <Menu.Item
+                      onClick={() => this.callReference(item.id)}
                       key={item.id}
-                      overlay={collectionMenu}
-                      trigger={["contextMenu"]}
                     >
-                      <span>{item.attributes.name}</span>
-                    </Dropdown>
-                  </Menu.Item>
-                );
+                      <Dropdown
+                        key={item.id}
+                        overlay={this.collectionMenu}
+                        trigger={["contextMenu"]}
+                      >
+                        <span>{item.attributes.name}</span>
+                      </Dropdown>
+                    </Menu.Item>
+                  );
+                }
+                if (
+                  item.attributes.parent.data === null &&
+                  item.attributes.collections.data[0]
+                ) {
+                  return this.parentMenu(item);
+                }
               })}
             </Menu>
           </Sider>
@@ -182,4 +286,4 @@ class DashBoard extends Component<any, any> {
     );
   }
 }
-export default withRouter(DashBoard);
+export default withTranslation()(withRouter(DashBoard));

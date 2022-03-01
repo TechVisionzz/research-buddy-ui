@@ -9,6 +9,10 @@ button.ant-switch,
     float: right;
 }
 
+tr.ant-table-row.ant-table-row {
+    cursor: pointer;
+}
+
 span.anticon.anticon-minus-circle {
     margin-bottom: 26px;
     margin-left: 6px;
@@ -29,12 +33,25 @@ span.ant-input-group-wrapper.ant-input-group-wrapper-lg.ant-input-search.ant-inp
     width: 600px;
 }
 
+.ant-radio-group.ant-radio-group-outline {
+    margin-left: 5px;
+}
+
 .ant-modal-content {
     border-radius: 7px !important;
 }
 
 .modelTitle {
     text-align: center;
+}
+
+.example {
+    margin: 20px 0;
+    margin-bottom: 20px;
+    padding: 30px 50px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
 }
 
 form#basic {

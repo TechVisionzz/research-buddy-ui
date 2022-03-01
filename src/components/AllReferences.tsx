@@ -13,7 +13,6 @@ import {
   Modal,
   Popconfirm,
 } from "antd";
-import "../css/login.css";
 import { SearchOutlined, DownOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import {
@@ -22,6 +21,7 @@ import {
   getAllReferences,
   getCollectionReferences,
   getCollections,
+  getCollectionsForDropdown,
   getEditReference,
   getOneCollection,
   getTrashReferences,
@@ -34,7 +34,8 @@ import { getTemplate } from "./csl";
 import { Link, withRouter } from "react-router-dom";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import ReferenceEdit from "./ReferenceEdit";
-// import { Route } from "react-router-dom";
+import { t } from "i18next";
+import { withTranslation } from "react-i18next";
 const { Cite, plugins } = require("@citation-js/core");
 require("@citation-js/plugin-csl");
 var myself: any, type: any;
@@ -63,9 +64,9 @@ class AllReferences extends Component<any, any> {
     };
     this.closeReference = this.closeReference.bind(this);
   }
-  getCollections = async () => {
+  getCollectionsForDropdown = async () => {
     this.setState({ isSpinVisible: true });
-    await getCollections()
+    await getCollectionsForDropdown()
       .then((response: any) => {
         this.setState({ collections: response.data });
       })
@@ -76,7 +77,7 @@ class AllReferences extends Component<any, any> {
   };
   componentDidMount = async () => {
     this.getAllReferences();
-    this.getCollections();
+    this.getCollectionsForDropdown();
   };
   getAllReferences = async () => {
     this.setState({ isSpinVisible: true });
@@ -94,7 +95,6 @@ class AllReferences extends Component<any, any> {
   };
   getCollectionReferences = async () => {
     this.setState({ isSpinVisible: true });
-
     await getOneCollection()
       .then(async (response: any) => {
         await this.setState({
@@ -139,7 +139,7 @@ class AllReferences extends Component<any, any> {
     if (this.state.identifier === "trash") {
       await this.getTrashReferences();
     }
-    // this.getCollections();
+    this.getCollectionsForDropdown();
   };
   deleteReference = async (id: any) => {
     console.log(id);
@@ -147,7 +147,7 @@ class AllReferences extends Component<any, any> {
     if (this.state.title === "Trash") {
       await deleteReferencePermanently(id)
         .then(async (response: any) => {
-          message.success("Reference Delete SuccessFully");
+          message.success(t("deleteSuccess"));
           this.getTrashReferences();
         })
         .catch(async (error: any) => {
@@ -158,7 +158,7 @@ class AllReferences extends Component<any, any> {
       // delete reference mean set trash to true
       await deleteReferenceTemporarily(id)
         .then(async (response: any) => {
-          message.success("Reference Delete SuccessFully");
+          message.success(t("deleteSuccess"));
           this.getAllReferences();
         })
         .catch(async (error: any) => {
@@ -239,7 +239,6 @@ class AllReferences extends Component<any, any> {
   });
   handleSearch = (selectedKeys: any, confirm: any, dataIndex: any) => {
     console.log(selectedKeys);
-    // confirm();
     this.setState({
       searchText: selectedKeys,
       searchedColumn: dataIndex,
@@ -256,7 +255,7 @@ class AllReferences extends Component<any, any> {
     await setReference(values)
       .then((response: any) => {
         console.log(response.data);
-        message.success("Reference Added SuccessFully!");
+        message.success(t("addSuccess"));
       })
       .catch(async (error: any) => {
         message.error(error.error.message);
@@ -389,7 +388,8 @@ class AllReferences extends Component<any, any> {
     console.log(id);
     await restoreReference(id)
       .then(async (response: any) => {
-        message.success("Restore Reference  SuccessFully");
+        message.success(t("restoreSuccess"));
+        await this.setState({ identifier: "collection" });
         this.getTrashReferences();
       })
       .catch(async (error: any) => {
@@ -472,11 +472,28 @@ class AllReferences extends Component<any, any> {
     link.click();
     document.body.removeChild(link);
   };
+  closeCollectionModel = async () => {
+    this.setState({ isModalVisible: false });
+  };
+  closeExportModel = async () => {
+    this.setState({ isExportModalVisible: false });
+  };
+  closeMultipleExportModal = async () => {
+    this.setState({ multipleExportModal: false });
+  };
+  closeselectedExportModal = async () => {
+    this.setState({ selectedExportModal: false });
+  };
   render() {
     const { Option } = Select;
     const organizeMenu = (
       <Menu>
-        <Menu.Item onClick={this.showCollections} key="1">
+        <Menu.Item
+          onClick={(a) => {
+            this.showCollections();
+          }}
+          key="1"
+        >
           Add To Collection
         </Menu.Item>
       </Menu>
@@ -492,21 +509,22 @@ class AllReferences extends Component<any, any> {
     }
     const columns: any = [
       {
-        title: "Title",
+        title: t("allReference.title"),
         dataIndex: ["attributes", "title"],
         key: "title",
         width: "40%",
-        // ...this.getColumnSearchProps("name"),
+        render: (text: any, record: any) => (
+          <a onClick={() => this.editReference(record.id)}>{text}</a>
+        ),
       },
       {
-        title: "Type",
+        title: t("allReference.type"),
         dataIndex: ["attributes", "type"],
         key: "type",
         width: "30%",
-        // ...this.getColumnSearchProps("email"),
       },
       {
-        title: "Actions",
+        title: t("allReference.actions"),
         key: "Actions",
         render: (text: any, record: any) => (
           <Space size="middle">
@@ -516,36 +534,32 @@ class AllReferences extends Component<any, any> {
                   <>
                     <Dropdown overlay={organizeMenu} trigger={["click"]}>
                       <Button
-                        onClick={() => this.setRecordId(record.id)}
+                        onClick={(a) => {
+                          this.setRecordId(record.id);
+                        }}
                         size="small"
                       >
-                        organize <DownOutlined />
+                        {t("allReference.organize")} <DownOutlined />
                       </Button>
                     </Dropdown>
                     <Button
-                      onClick={() => this.openExportModel(record.id)}
+                      onClick={(a) => {
+                        this.openExportModel(record.id);
+                      }}
                       size="small"
                     >
-                      Export
-                    </Button>
-                    <Button
-                      onClick={() => this.editReference(record.id)}
-                      size="small"
-                    >
-                      Edit
+                      {t("allReference.Export")}
                     </Button>
                     <Popconfirm
-                      onConfirm={() => this.deleteReference(record.id)}
+                      onConfirm={(a: any) => {
+                        this.deleteReference(record.id);
+                      }}
                       title="Are You Sure"
                       okText="yes"
                       cancelText="no"
                     >
-                      <Button
-                        // onClick={() => this.deleteReference(record.id)}
-                        danger
-                        size="small"
-                      >
-                        Delete
+                      <Button danger size="small">
+                        {t("allReference.Delete")}
                       </Button>
                     </Popconfirm>
                   </>
@@ -557,19 +571,23 @@ class AllReferences extends Component<any, any> {
                 return (
                   <>
                     <Button
-                      onClick={() => this.restoreReference(record.id)}
+                      onClick={(a) => {
+                        this.restoreReference(record.id);
+                      }}
                       size="small"
                     >
-                      Restore
+                      {t("allReference.Restore")}
                     </Button>
                     <Popconfirm
-                      onConfirm={() => this.deleteReference(record.id)}
+                      onConfirm={(a: any) => {
+                        this.deleteReference(record.id);
+                      }}
                       title="Are You Sure"
                       okText="yes"
                       cancelText="no"
                     >
                       <Button danger size="small">
-                        Delete
+                        {t("allReference.Delete")}
                       </Button>
                     </Popconfirm>
                   </>
@@ -591,14 +609,14 @@ class AllReferences extends Component<any, any> {
             onClick={() => this.openExportSelectdModel()}
             size="small"
           >
-            Export Selected
+            {t("allReference.ExportSelected")}
           </Button>
           <Button
             onClick={this.exportAllReferences}
             size="small"
             type="primary"
           >
-            Export All
+            {t("allReference.ExportAll")}
           </Button>
         </Space>
       );
@@ -613,22 +631,12 @@ class AllReferences extends Component<any, any> {
           closeReference={this.closeReference}
           editIdentifier={this.state.editIdentifier}
         />
-
-        {/* <Route
-          path="/editReference"
-          render={(props) => (
-            <ReferenceEdit
-              open={this.state.open}
-              closeReference={this.closeReference}
-              {...props}
-            />
-          )}
-        /> */}
         <Modal
           style={{ width: 300 }}
           footer={null}
-          title="Select Collection"
+          title={t("allReference.SelectCollection")}
           visible={this.state.isModalVisible}
+          onCancel={this.closeCollectionModel}
         >
           <Form
             className="marginForm"
@@ -637,7 +645,7 @@ class AllReferences extends Component<any, any> {
           >
             <Form.Item
               name="collectionName"
-              label="Collection"
+              label={t("allReference.Collection")}
               rules={[{ required: true }]}
             >
               <Select placeholder="Please Select Collection">
@@ -652,7 +660,7 @@ class AllReferences extends Component<any, any> {
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                ok
+                {t("allReference.ok")}
               </Button>
             </Form.Item>
           </Form>
@@ -661,8 +669,9 @@ class AllReferences extends Component<any, any> {
         <Modal
           style={{ width: 300 }}
           footer={null}
-          title="Select Style"
+          title={t("allReference.SelectStyle")}
           visible={this.state.isExportModalVisible}
+          onCancel={this.closeExportModel}
         >
           <Form
             className="marginForm"
@@ -671,18 +680,18 @@ class AllReferences extends Component<any, any> {
           >
             <Form.Item
               name="referenceStyle"
-              label="Style"
+              label={t("allReference.Style")}
               rules={[{ required: true }]}
             >
               <Select placeholder="Please Select Style">
-                <Option value="Chicago">Chicago</Option>
-                <Option value="MLA">MLA</Option>
-                <Option value="APA">APA</Option>
+                <Option value="Chicago">{t("allReference.Chicago")}</Option>
+                <Option value="MLA">{t("allReference.MLA")}</Option>
+                <Option value="APA">{t("allReference.APA")}</Option>
               </Select>
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                ok
+                {t("allReference.ok")}
               </Button>
             </Form.Item>
           </Form>
@@ -691,8 +700,9 @@ class AllReferences extends Component<any, any> {
         <Modal
           style={{ width: 300 }}
           footer={null}
-          title="Select Style"
+          title={t("allReference.SelectStyle")}
           visible={this.state.multipleExportModal}
+          onCancel={this.closeMultipleExportModal}
         >
           <Form
             className="marginForm"
@@ -705,14 +715,14 @@ class AllReferences extends Component<any, any> {
               rules={[{ required: true }]}
             >
               <Select placeholder="Please Select Style">
-                <Option value="Chicago">Chicago</Option>
-                <Option value="MLA">MLA</Option>
-                <Option value="APA">APA</Option>
+                <Option value="Chicago">{t("allReference.Chicago")}</Option>
+                <Option value="MLA">{t("allReference.MLA")}</Option>
+                <Option value="APA">{t("allReference.APA")}</Option>
               </Select>
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                ok
+                {t("allReference.ok")}
               </Button>
             </Form.Item>
           </Form>
@@ -721,8 +731,9 @@ class AllReferences extends Component<any, any> {
         <Modal
           style={{ width: 300 }}
           footer={null}
-          title="Select Style"
+          title={t("allReference.SelectStyle")}
           visible={this.state.selectedExportModal}
+          onCancel={this.closeselectedExportModal}
         >
           <Form
             className="marginForm"
@@ -731,18 +742,18 @@ class AllReferences extends Component<any, any> {
           >
             <Form.Item
               name="referenceStyle"
-              label="Style"
+              label={t("allReference.Style")}
               rules={[{ required: true }]}
             >
               <Select placeholder="Please Select Style">
-                <Option value="Chicago">Chicago</Option>
-                <Option value="MLA">MLA</Option>
-                <Option value="APA">APA</Option>
+                <Option value="Chicago">{t("allReference.Chicago")}</Option>
+                <Option value="MLA">{t("allReference.MLA")}</Option>
+                <Option value="APA">{t("allReference.APA")}</Option>
               </Select>
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                ok
+                {t("allReference.ok")}
               </Button>
             </Form.Item>
           </Form>
@@ -759,4 +770,4 @@ class AllReferences extends Component<any, any> {
     );
   }
 }
-export default withRouter(AllReferences);
+export default withTranslation()(withRouter(AllReferences));

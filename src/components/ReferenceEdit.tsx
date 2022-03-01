@@ -10,7 +10,6 @@ import {
   message,
   Spin,
 } from "antd";
-import "../css/login.css";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import Search from "antd/lib/input/Search";
 import {
@@ -20,6 +19,8 @@ import {
 } from "./commonHelper";
 import { GlobalVars } from "../global/global";
 import { withRouter } from "react-router-dom";
+import { t } from "i18next";
+import { withTranslation } from "react-i18next";
 var myself: any,
   from: any,
   to: any,
@@ -45,29 +46,38 @@ class ReferenceEdit extends Component<any, any> {
     };
   }
   getEditReference = async () => {
-    await this.setState({ editReference: "" });
+    await this.setState({ editReference: {} });
+    console.log(this.state.editReference);
     //get edit reference data from db
     await getEditReference()
       .then(async (response: any) => {
         if (response && response.data) {
           //set pages and codepages
-          var pages = response.data.attributes.pages.split("-");
-          if (pages[0] !== "undefined") {
-            from = pages[0];
+          if (response.data.attributes.pages) {
+            var pages = response.data.attributes.pages.split("-");
+            if (pages[0] !== "undefined") {
+              from = pages[0];
+            }
+            if (pages[1] !== "undefined") {
+              to = pages[1];
+            }
           }
-          if (pages[1] !== "undefined") {
-            to = pages[1];
-          }
-          var codePages = response.data.attributes.codePages.split("-");
-          if (codePages[0] !== "undefined") {
-            codePagesFrom = codePages[0];
-          }
-          if (codePages[1] !== "undefined") {
-            codePagesTo = codePages[1];
+          if (response.data.attributes.codePages) {
+            var codePages = response.data.attributes.codePages.split("-");
+            if (codePages[0] !== "undefined") {
+              codePagesFrom = codePages[0];
+            }
+            if (codePages[1] !== "undefined") {
+              codePagesTo = codePages[1];
+            }
           }
           //end set pages here
           // set authors if present
-          if (response.data.attributes.authors) {
+          if (response.data.attributes.authors.data.length >= 1) {
+            //first set authors to null make sure no previous author is present in array
+            await this.setState({
+              authors: [],
+            });
             var counter = 0;
             response.data.attributes.authors.data.map(async (author: any) => {
               if (counter == 0) {
@@ -77,7 +87,6 @@ class ReferenceEdit extends Component<any, any> {
                 var authorobject = {
                   author: author.attributes.name,
                 };
-                // authors.push(authorobject);
                 await this.setState({
                   authors: [...this.state.authors, authorobject],
                 });
@@ -87,13 +96,21 @@ class ReferenceEdit extends Component<any, any> {
                 await this.setState({
                   authors: this.state.authors.filter(onlyUnique),
                 });
-                console.log(this.state.authors);
               }
             });
+          } else {
+            await this.setState({
+              authors: [],
+            });
+            author1 = " ";
           }
           //end author
           //set editor id
-          if (response.data.attributes.editors) {
+          if (response.data.attributes.editors.data.length >= 1) {
+            //first set editors to null make sure no previous editors is present in array
+            await this.setState({
+              editorsValues: [],
+            });
             response.data.attributes.editors.data.map(async (editor: any) => {
               await this.setState({
                 editorsValues: [
@@ -107,12 +124,19 @@ class ReferenceEdit extends Component<any, any> {
               await this.setState({
                 editorsValues: this.state.editorsValues.filter(onlyUnique),
               });
-              console.log(this.state.editorsValues);
+            });
+          } else {
+            await this.setState({
+              editorsValues: [],
             });
           }
           //end editor id
           //set tag id
-          if (response.data.attributes.tags) {
+          if (response.data.attributes.tags.data.length >= 1) {
+            //first set tags to null make sure no previous tags is present in array
+            await this.setState({
+              tags: [],
+            });
             response.data.attributes.tags.data.map(async (tag: any) => {
               await this.setState({
                 tags: [...this.state.tags, tag.attributes.name],
@@ -121,7 +145,10 @@ class ReferenceEdit extends Component<any, any> {
                 return self.indexOf(value) === index;
               };
               await this.setState({ tags: this.state.tags.filter(onlyUnique) });
-              console.log(this.state.tags);
+            });
+          } else {
+            await this.setState({
+              tags: [],
             });
           }
           //end tag id
@@ -151,13 +178,17 @@ class ReferenceEdit extends Component<any, any> {
     });
   };
   onClose = async () => {
+    author1 = " ";
     await this.setState({
+      isSpinVisible: false,
       visible: false,
-      editReference: "",
+      author: [],
+      editReference: {},
+      available: false,
       authors: [],
       editorsValues: [],
       tags: [],
-      identifier: " ",
+      identifier: {},
     });
     myself.props.closeReference();
   };
@@ -176,24 +207,19 @@ class ReferenceEdit extends Component<any, any> {
     await updateReference(values, this.state.author)
       .then(async (response: any) => {
         if (response && response.data) {
-          message.success(" edit Success ");
+          message.success(t("editSuccess"));
           myform.current.resetFields();
-          // await this.setState({ isSpinVisible: false, editReference: "" });
           await this.setState({
-            isSpinVisible: false,
-            editReference: "",
+            author: [],
+            editReference: {},
             authors: [],
             editorsValues: [],
             tags: [],
-            identifier: " ",
+            identifier: {},
           });
-          console.log(this.state.editReference);
-          console.log(this.state.authors);
-          console.log(this.state.editorsValues);
-          console.log(this.state.tags);
-          console.log(this.state.identifier);
           this.setState({
             visible: false,
+            isSpinVisible: false,
           });
           myself.props.closeReference();
         }
@@ -229,14 +255,18 @@ class ReferenceEdit extends Component<any, any> {
     }
     const { Option } = Select;
     var volume = (
-      <Form.Item name="volume" label="Volume" rules={[{ required: true }]}>
+      <Form.Item
+        name="volume"
+        label={t("reference.Volume")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
     var year = (
       <Form.Item
         name="year"
-        label="Year"
+        label={t("reference.Year")}
         rules={[{ required: true }]}
         style={{
           display: "inline-block",
@@ -246,18 +276,26 @@ class ReferenceEdit extends Component<any, any> {
       </Form.Item>
     );
     var city = (
-      <Form.Item name="city" label="City" rules={[{ required: true }]}>
+      <Form.Item
+        name="city"
+        label={t("reference.City")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
     var code = (
-      <Form.Item name="code" label="Code" rules={[{ required: true }]}>
+      <Form.Item
+        name="code"
+        label={t("reference.Code")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
     var pages = (
       <Form.Item
-        label="Pages"
+        label={t("reference.Pages")}
         style={{
           marginBottom: 0,
         }}
@@ -285,19 +323,27 @@ class ReferenceEdit extends Component<any, any> {
       </Form.Item>
     );
     var edition = (
-      <Form.Item name="edition" label="Edition" rules={[{ required: true }]}>
+      <Form.Item
+        name="edition"
+        label={t("reference.Edition")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
     var editors = (
-      <Form.Item name="editors" label="Editors" rules={[{ required: true }]}>
+      <Form.Item
+        name="editors"
+        label={t("reference.Editors")}
+        rules={[{ required: true }]}
+      >
         <Select mode="tags" placeholder="Please select"></Select>
       </Form.Item>
     );
     var publisher = (
       <Form.Item
         name="publisher"
-        label="Publisher"
+        label={t("reference.Publisher")}
         rules={[{ required: true }]}
       >
         <Input />
@@ -306,21 +352,25 @@ class ReferenceEdit extends Component<any, any> {
     var distributor = (
       <Form.Item
         name="distributor"
-        label="Distributor"
+        label={t("reference.Distributor")}
         rules={[{ required: true }]}
       >
         <Input />
       </Form.Item>
     );
     var country = (
-      <Form.Item name="country" label="Country" rules={[{ required: true }]}>
+      <Form.Item
+        name="country"
+        label={t("reference.Country")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
     var publication = (
       <Form.Item
         name="publication"
-        label="Publication"
+        label={t("reference.Publication")}
         rules={[{ required: true }]}
       >
         <Input />
@@ -329,19 +379,27 @@ class ReferenceEdit extends Component<any, any> {
     var institution = (
       <Form.Item
         name="institution"
-        label="Institution"
+        label={t("reference.Institution")}
         rules={[{ required: true }]}
       >
         <Input />
       </Form.Item>
     );
     var number = (
-      <Form.Item name="number" label="Number" rules={[{ required: true }]}>
+      <Form.Item
+        name="number"
+        label={t("reference.Number")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
     var issue = (
-      <Form.Item name="issue" label="Issue" rules={[{ required: true }]}>
+      <Form.Item
+        name="issue"
+        label={t("reference.Issue")}
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
     );
@@ -349,698 +407,719 @@ class ReferenceEdit extends Component<any, any> {
       <Spin size="large" spinning={this.state.isSpinVisible}>
         <Drawer
           placement={"left"}
-          title={"Edit Reference"}
+          title={t("reference.EditReference")}
           width={620}
           onClose={this.onClose}
           visible={this.state.visible}
           bodyStyle={{ paddingBottom: 80 }}
         >
-          <Form
-            ref={myform}
-            layout="vertical"
-            hideRequiredMark
-            name="basic"
-            labelCol={{ span: 24 }}
-            wrapperCol={{ span: 24 }}
-            initialValues={{
-              remember: true,
-              volume: available ? editReference.attributes.volume : " ",
-              year: available ? editReference.attributes.year : " ",
-              city: available ? editReference.attributes.city : " ",
-              code: available ? editReference.attributes.code : " ",
-              from: available ? from : " ",
-              to: available ? to : " ",
-              edition: available ? editReference.attributes.edition : " ",
-              editors: available ? editorsValues : " ",
-              publisher: available ? editReference.attributes.publisher : " ",
-              distributor: available
-                ? editReference.attributes.distributor
-                : " ",
-              country: available ? editReference.attributes.country : " ",
-              publication: title ? editReference.attributes.publication : " ",
-              institution: available
-                ? editReference.attributes.institution
-                : " ",
-              number: available ? editReference.attributes.number : " ",
-              issue: available ? editReference.attributes.issue : " ",
-              identifiers: available
-                ? editReference.attributes.identifiers
-                : " ",
-              referenceType: available
-                ? editReference.attributes.referenceType
-                : " ",
-              title: available ? editReference.attributes.title : " ",
-              authors: available ? author1 : " ",
-              authorsArray: available ? authors : " ",
-              tags: available ? tags : " ",
-              codePagesFrom: available ? codePagesFrom : " ",
-              codePagesTo: available ? codePagesTo : " ",
-              legislativeBody: available
-                ? editReference.attributes.legislativeBody
-                : " ",
-              book: available ? editReference.attributes.book : " ",
-              chapter: available ? editReference.attributes.chapter : " ",
-              version: available ? editReference.attributes.version : " ",
-              procTitle: available ? editReference.attributes.procTitle : " ",
-              encyclopedia: available
-                ? editReference.attributes.encyclopedia
-                : " ",
-              journal: available ? editReference.attributes.journal : " ",
-              issuer: available ? editReference.attributes.issuer : " ",
-              assignee: available ? editReference.attributes.assignee : " ",
-              source: available ? editReference.attributes.source : " ",
-              statuteNumber: available
-                ? editReference.attributes.statuteNumber
-                : " ",
-              department: available ? editReference.attributes.department : " ",
-              type: available ? editReference.attributes.type : " ",
-              typeOfwork: available ? editReference.attributes.typeOfwork : " ",
-              series: available ? editReference.attributes.series : " ",
-              tagId: available ? editReference.attributes.tagId : " ",
-              month: available ? editReference.attributes.month : " ",
-              day: available ? editReference.attributes.day : " ",
-              abstract: available ? editReference.attributes.abstract : " ",
-            }}
-            onFinish={this.onFinish}
-            onFinishFailed={this.onFinishFailed}
-            autoComplete="off"
-          >
-            <Form.Item
-              label="Identifiers (ArXivID, DOI or PMID)"
-              name="identifiers"
+          <Spin size="large" spinning={this.state.isSpinVisible}>
+            <Form
+              ref={myform}
+              layout="vertical"
+              hideRequiredMark
+              name="basic"
+              labelCol={{ span: 24 }}
+              scrollToFirstError={true}
+              wrapperCol={{ span: 24 }}
+              initialValues={{
+                remember: true,
+                volume: available ? editReference.attributes.volume : " ",
+                year: available ? editReference.attributes.year : " ",
+                city: available ? editReference.attributes.city : " ",
+                code: available ? editReference.attributes.code : " ",
+                from: available ? from : " ",
+                to: available ? to : " ",
+                edition: available ? editReference.attributes.edition : " ",
+                editors: available ? editorsValues : " ",
+                publisher: available ? editReference.attributes.publisher : " ",
+                distributor: available
+                  ? editReference.attributes.distributor
+                  : " ",
+                country: available ? editReference.attributes.country : " ",
+                publication: title ? editReference.attributes.publication : " ",
+                institution: available
+                  ? editReference.attributes.institution
+                  : " ",
+                number: available ? editReference.attributes.number : " ",
+                issue: available ? editReference.attributes.issue : " ",
+                identifiers: available
+                  ? editReference.attributes.identifiers
+                  : " ",
+                referenceType: available
+                  ? editReference.attributes.referenceType
+                  : " ",
+                title: available ? editReference.attributes.title : " ",
+                authors: available ? author1 : " ",
+                authorsArray: available ? authors : " ",
+                tags: available ? tags : " ",
+                codePagesFrom: available ? codePagesFrom : " ",
+                codePagesTo: available ? codePagesTo : " ",
+                legislativeBody: available
+                  ? editReference.attributes.legislativeBody
+                  : " ",
+                book: available ? editReference.attributes.book : " ",
+                chapter: available ? editReference.attributes.chapter : " ",
+                version: available ? editReference.attributes.version : " ",
+                procTitle: available ? editReference.attributes.procTitle : " ",
+                encyclopedia: available
+                  ? editReference.attributes.encyclopedia
+                  : " ",
+                journal: available ? editReference.attributes.journal : " ",
+                issuer: available ? editReference.attributes.issuer : " ",
+                assignee: available ? editReference.attributes.assignee : " ",
+                source: available ? editReference.attributes.source : " ",
+                statuteNumber: available
+                  ? editReference.attributes.statuteNumber
+                  : " ",
+                department: available
+                  ? editReference.attributes.department
+                  : " ",
+                type: available ? editReference.attributes.type : " ",
+                typeOfwork: available
+                  ? editReference.attributes.typeOfwork
+                  : " ",
+                series: available ? editReference.attributes.series : " ",
+                tagId: available ? editReference.attributes.tagId : " ",
+                month: available ? editReference.attributes.month : " ",
+                day: available ? editReference.attributes.day : " ",
+                abstract: available ? editReference.attributes.abstract : " ",
+              }}
+              onFinish={this.onFinish}
+              onFinishFailed={this.onFinishFailed}
+              autoComplete="off"
             >
-              <Search
-                placeholder=" search Book"
-                allowClear
-                enterButton="Search"
-                onSearch={this.onSearch}
-              />
-            </Form.Item>
-            <Form.Item name="referenceType" label="Reference Type">
-              <Select placeholder="Select Reference Type" allowClear>
-                <Option value="bill">Bill</Option>
-                <Option value="book">Book</Option>
-                <Option value="bookSection">Book Section</Option>
-                <Option value="case">Case</Option>
-                <Option value="computerProgram">Computer Program</Option>
-                <Option value="conferenceProceedings">
-                  Conference Proceedings
-                </Option>
-                <Option value="encyclopediaArticle">
-                  Encyclopedia Article
-                </Option>
-                <Option value="film">Film</Option>
-                <Option value="hearing">Hearing</Option>
-                <Option value="journalArticle">Journal Article</Option>
-                <Option value="magazineArticle">Magazine Article</Option>
-                <Option value="newspaperArticle">Newspaper Article</Option>
-                <Option value="patent">Patent</Option>
-                <Option value="report">Report</Option>
-                <Option value="statute">Statute</Option>
-                <Option value="televisionBroadcast">
-                  Television Broadcast
-                </Option>
-                <Option value="thesis">Thesis</Option>
-                <Option value="unspacified">Unspacified</Option>
-                <Option value="webPage">Web Page</Option>
-                <Option value="workingPaper">Working Paper</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="title" label="Title">
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="authors"
-              label="Authors"
-              rules={[{ required: true }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.List name="authorsArray">
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map(({ key, name, ...restField }) => (
+              <Form.Item label={t("reference.Identifiers")} name="identifiers">
+                <Search
+                  placeholder=" search Book"
+                  allowClear
+                  enterButton="Search"
+                  onSearch={this.onSearch}
+                />
+              </Form.Item>
+              <Form.Item
+                name="referenceType"
+                label={t("reference.ReferenceType")}
+              >
+                <Select placeholder="Select Reference Type" allowClear>
+                  <Option value="bill">{t("reference.Bill")}</Option>
+                  <Option value="book">{t("reference.Book")}</Option>
+                  <Option value="bookSection">
+                    {t("reference.BookSection")}
+                  </Option>
+                  <Option value="case">{t("reference.Case")}</Option>
+                  <Option value="computerProgram">
+                    {t("reference.ComputerProgram")}
+                  </Option>
+                  <Option value="conferenceProceedings">
+                    {t("reference.ConferenceProceedings")}
+                  </Option>
+                  <Option value="encyclopediaArticle">
+                    {t("reference.EncyclopediaArticle")}
+                  </Option>
+                  <Option value="film">{t("reference.Film")}</Option>
+                  <Option value="hearing">{t("reference.Hearing")}</Option>
+                  <Option value="journalArticle">
+                    {t("reference.JournalArticle")}
+                  </Option>
+                  <Option value="magazineArticle">
+                    {t("reference.MagazineArticle")}
+                  </Option>
+                  <Option value="newspaperArticle">
+                    {t("reference.NewspaperArticle")}
+                  </Option>
+                  <Option value="patent">{t("reference.Patent")}</Option>
+                  <Option value="report">{t("reference.Report")}</Option>
+                  <Option value="statute">{t("reference.Statute")}</Option>
+                  <Option value="televisionBroadcast">
+                    {t("reference.TelevisionBroadcast")}
+                  </Option>
+                  <Option value="thesis">{t("reference.Thesis")}</Option>
+                  <Option value="unspacified">
+                    {t("reference.Unspacified")}
+                  </Option>
+                  <Option value="webPage">{t("reference.WebPage")}</Option>
+                  <Option value="workingPaper">
+                    {t("reference.WorkingPaper")}
+                  </Option>
+                </Select>
+              </Form.Item>
+              <Form.Item name="title" label={t("reference.Title")}>
+                <Input />
+              </Form.Item>
+              <Form.Item
+                name="authors"
+                label={t("reference.Authors")}
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.List name="authorsArray">
+                {(fields, { add, remove }) => (
+                  <>
+                    {fields.map(({ key, name, ...restField }) => (
+                      <>
+                        <Form.Item
+                          key={key}
+                          style={{
+                            display: "inline-block",
+                            marginBottom: 0,
+                            width: "96%",
+                          }}
+                          {...restField}
+                          name={[name, "author"]}
+                          rules={[
+                            { required: true, message: "Missing Author Name" },
+                          ]}
+                        >
+                          <Input placeholder="Author Name" />
+                        </Form.Item>
+                        <MinusCircleOutlined onClick={() => remove(name)} />
+                      </>
+                    ))}
+                    <Form.Item>
+                      <Button
+                        type="dashed"
+                        onClick={() => add()}
+                        block
+                        icon={<PlusOutlined />}
+                      >
+                        {t("reference.AddAuthor")}
+                      </Button>
+                    </Form.Item>
+                  </>
+                )}
+              </Form.List>
+              {/* this is for Bill */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "bill" ? (
                     <>
+                      {year}
                       <Form.Item
-                        key={key}
+                        label={t("reference.CodePages")}
                         style={{
                           display: "inline-block",
                           marginBottom: 0,
-                          width: "96%",
                         }}
-                        {...restField}
-                        name={[name, "author"]}
-                        rules={[
-                          { required: true, message: "Missing Author Name" },
-                        ]}
                       >
-                        <Input placeholder="Author Name" />
+                        <Form.Item
+                          name="codePagesFrom"
+                          rules={[{ required: true }]}
+                          style={{
+                            display: "inline-block",
+                            width: "calc(50%)",
+                          }}
+                        >
+                          <Input placeholder="From" />
+                        </Form.Item>
+                        <Form.Item
+                          name="codePagesTo"
+                          rules={[{ required: true }]}
+                          style={{
+                            display: "inline-block",
+                            width: "calc(50%)",
+                          }}
+                        >
+                          <Input placeholder="to" />
+                        </Form.Item>
                       </Form.Item>
-                      <MinusCircleOutlined onClick={() => remove(name)} />
+                      {city}
+                      <Form.Item
+                        name="legislativeBody"
+                        label={t("reference.LegislativeBody")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {code}
                     </>
-                  ))}
-                  <Form.Item>
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Author
-                    </Button>
-                  </Form.Item>
-                </>
-              )}
-            </Form.List>
-            {/* this is for Bill */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "bill" ? (
-                  <>
-                    {year}
-                    <Form.Item
-                      label="Code Pages"
-                      style={{
-                        display: "inline-block",
-                        marginBottom: 0,
-                      }}
-                    >
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for Book */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "book" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {volume}
+                      {edition}
+                      {editors}
+                      {city}
+                      {publisher}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for bookSection */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "bookSection" ? (
+                    <>
                       <Form.Item
-                        name="codePagesFrom"
+                        name="book"
+                        label={t("reference.BookItem")}
                         rules={[{ required: true }]}
-                        style={{
-                          display: "inline-block",
-                          width: "calc(50%)",
-                        }}
                       >
-                        <Input placeholder="From" />
+                        <Input />
+                      </Form.Item>
+                      {year}
+                      {pages}
+                      {volume}
+                      {edition}
+                      {editors}
+                      {city}
+                      {publisher}
+                      <Form.Item
+                        name="chapter"
+                        label={t("reference.Chapter")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for bookSection */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "case" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {volume}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for computerProgram */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "computerProgram" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {city}
+                      {publisher}
+                      <Form.Item
+                        name="version"
+                        label={t("reference.Version")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for conferenceProceedings */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "conferenceProceedings" ? (
+                    <>
+                      <Form.Item
+                        name="procTitle"
+                        label={t("reference.Proc.Title")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {year}
+                      {pages}
+                      {city}
+                      {publisher}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for encyclopediaArticle */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "encyclopediaArticle" ? (
+                    <>
+                      <Form.Item
+                        name="encyclopedia"
+                        label={t("reference.Encyclopedia")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {year}
+                      {pages}
+                      {volume}
+                      {edition}
+                      {editors}
+                      {city}
+                      {publisher}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for film */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "film" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {distributor}
+                      {country}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for hearing */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "hearing" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {city}
+                      {publisher}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for journalArticle */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "journalArticle" ? (
+                    <>
+                      <Form.Item
+                        name="journal"
+                        label={t("reference.journal")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {year}
+                      {pages}
+                      {volume}
+                      {issue}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for magazineArticle */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "magazineArticle" ? (
+                    <>
+                      {publication}
+                      {year}
+                      {pages}
+                      {city}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for newspaperArticle */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "newspaperArticle" ? (
+                    <>
+                      {publication}
+                      {year}
+                      {pages}
+                      {city}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for patent */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "patent" ? (
+                    <>
+                      {year}
+                      {pages}
+                      <Form.Item
+                        name="issuer"
+                        label={t("reference.Issuer")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {institution}
+                      {country}
+                      {number}
+                      <Form.Item
+                        name="assignee"
+                        label={t("reference.Assignee")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for report */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "report" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {city}
+                      {institution}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for statute */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "statute" ? (
+                    <>
+                      {publication}
+                      {year}
+                      {pages}
+                      <Form.Item
+                        name="source"
+                        label={t("reference.Source")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {country}
+                      <Form.Item
+                        name="statuteNumber"
+                        label={t("reference.StatuteNumber")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      {code}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for televisionBroadcast */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "televisionBroadcast" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {distributor}
+                      {country}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for thesis */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "thesis" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {city}
+                      {institution}
+                      <Form.Item
+                        name="department"
+                        label={t("reference.Department")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
                       </Form.Item>
                       <Form.Item
-                        name="codePagesTo"
+                        name="type"
+                        label={t("reference.Type")}
                         rules={[{ required: true }]}
-                        style={{
-                          display: "inline-block",
-                          width: "calc(50%)",
-                        }}
                       >
-                        <Input placeholder="to" />
+                        <Input />
                       </Form.Item>
-                    </Form.Item>
-                    {city}
-                    <Form.Item
-                      name="legislativeBody"
-                      label="Legislative Body"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {code}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for Book */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "book" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {volume}
-                    {edition}
-                    {editors}
-                    {city}
-                    {publisher}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for bookSection */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "bookSection" ? (
-                  <>
-                    <Form.Item
-                      name="book"
-                      label="Book"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {year}
-                    {pages}
-                    {volume}
-                    {edition}
-                    {editors}
-                    {city}
-                    {publisher}
-                    <Form.Item
-                      name="chapter"
-                      label="Chapter"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for bookSection */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "case" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {volume}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for computerProgram */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "computerProgram" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {city}
-                    {publisher}
-                    <Form.Item
-                      name="version"
-                      label="Version"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for conferenceProceedings */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "conferenceProceedings" ? (
-                  <>
-                    <Form.Item
-                      name="procTitle"
-                      label="Proc.Title"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {year}
-                    {pages}
-                    {city}
-                    {publisher}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for encyclopediaArticle */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "encyclopediaArticle" ? (
-                  <>
-                    <Form.Item
-                      name="encyclopedia"
-                      label="Encyclopedia"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {year}
-                    {pages}
-                    {volume}
-                    {edition}
-                    {editors}
-                    {city}
-                    {publisher}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for film */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "film" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {distributor}
-                    {country}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for hearing */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "hearing" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {city}
-                    {publisher}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for journalArticle */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "journalArticle" ? (
-                  <>
-                    <Form.Item
-                      name="journal"
-                      label="journal"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {year}
-                    {pages}
-                    {volume}
-                    {issue}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for magazineArticle */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "magazineArticle" ? (
-                  <>
-                    {publication}
-                    {year}
-                    {pages}
-                    {city}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for newspaperArticle */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "newspaperArticle" ? (
-                  <>
-                    {publication}
-                    {year}
-                    {pages}
-                    {city}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for patent */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "patent" ? (
-                  <>
-                    {year}
-                    {pages}
-                    <Form.Item
-                      name="issuer"
-                      label="Issuer"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {institution}
-                    {country}
-                    {number}
-                    <Form.Item
-                      name="assignee"
-                      label="Assignee"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for report */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "report" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {city}
-                    {institution}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for statute */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "statute" ? (
-                  <>
-                    {publication}
-                    {year}
-                    {pages}
-                    <Form.Item
-                      name="source"
-                      label="Source"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {country}
-                    <Form.Item
-                      name="statuteNumber"
-                      label="Statute Number"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    {code}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for televisionBroadcast */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "televisionBroadcast" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {distributor}
-                    {country}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for thesis */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "thesis" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {city}
-                    {institution}
-                    <Form.Item
-                      name="department"
-                      label="Department"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    <Form.Item
-                      name="type"
-                      label="Type"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for unspacified */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "unspacified" ? (
-                  <>
-                    {publication}
-                    {year}
-                    {pages}
-                    {volume}
-                    {issue}
-                    {city}
-                    {publisher}
-                    <Form.Item
-                      name="typeOfwork"
-                      label="Type of work"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for webPage */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "webPage" ? (
-                  <>
-                    {publication}
-                    {year}
-                    {pages}
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            {/* this is for workingPaper */}
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) =>
-                prevValues.referenceType !== currentValues.referenceType
-              }
-            >
-              {({ getFieldValue }) =>
-                getFieldValue("referenceType") === "workingPaper" ? (
-                  <>
-                    {year}
-                    {pages}
-                    {city}
-                    {institution}
-                    {number}
-                    <Form.Item
-                      name="series"
-                      label="Series"
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                  </>
-                ) : null
-              }
-            </Form.Item>
-            <Form.Item name="tags" label="Tags">
-              <Select mode="tags" placeholder="Please select"></Select>
-            </Form.Item>
-            <Form.Item name="month" label="Month">
-              <Input />
-            </Form.Item>
-            <Form.Item name="day" label="Day">
-              <Input />
-            </Form.Item>
-            <Form.Item name="abstract" label="Abstract">
-              <Input.TextArea />
-            </Form.Item>
-            <Form.Item wrapperCol={{ span: 16 }}>
-              <Space>
-                <Button type="primary" htmlType="submit">
-                  Submit
-                </Button>
-                <Button onClick={this.onClose}>Cancel</Button>
-              </Space>
-            </Form.Item>
-          </Form>
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for unspacified */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "unspacified" ? (
+                    <>
+                      {publication}
+                      {year}
+                      {pages}
+                      {volume}
+                      {issue}
+                      {city}
+                      {publisher}
+                      <Form.Item
+                        name="typeOfwork"
+                        label={t("reference.Typeofwork")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for webPage */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "webPage" ? (
+                    <>
+                      {publication}
+                      {year}
+                      {pages}
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              {/* this is for workingPaper */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.referenceType !== currentValues.referenceType
+                }
+              >
+                {({ getFieldValue }) =>
+                  getFieldValue("referenceType") === "workingPaper" ? (
+                    <>
+                      {year}
+                      {pages}
+                      {city}
+                      {institution}
+                      {number}
+                      <Form.Item
+                        name="series"
+                        label={t("reference.Series")}
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </>
+                  ) : null
+                }
+              </Form.Item>
+              <Form.Item name="tags" label={t("reference.Tags")}>
+                <Select mode="tags" placeholder="Please select"></Select>
+              </Form.Item>
+              <Form.Item name="month" label={t("reference.Month")}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="day" label={t("reference.Day")}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="abstract" label={t("reference.Abstract")}>
+                <Input.TextArea />
+              </Form.Item>
+              <Form.Item wrapperCol={{ span: 16 }}>
+                <Space>
+                  <Button type="primary" htmlType="submit">
+                    {t("edit")}
+                  </Button>
+                  <Button onClick={this.onClose}>{t("Cancel")}</Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </Spin>
         </Drawer>
       </Spin>
     );
   }
 }
-export default withRouter(ReferenceEdit);
+export default withTranslation()(withRouter(ReferenceEdit));

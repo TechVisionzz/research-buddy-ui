@@ -9,14 +9,16 @@ import {
   message,
   Spin,
 } from "antd";
-import "../css/login.css";
 import {
   createCollection,
   editCollection,
+  getCollectionsForDropdown,
   getOneCollection,
 } from "./commonHelper";
 import { withRouter } from "react-router-dom";
 import { GlobalVars } from "../global/global";
+import { t } from "i18next";
+import { withTranslation } from "react-i18next";
 var myself: any, myform: any;
 myform = createRef();
 class Collections extends Component<any, any> {
@@ -27,13 +29,29 @@ class Collections extends Component<any, any> {
       isSpinVisible: false,
       visible: false,
       check: "",
-      collectionData: {},
+      collection: {},
+      collections: [],
+      parentIsAvailable: false,
     };
   }
+  getCollectionsForDropdown = async () => {
+    await getCollectionsForDropdown()
+      .then(async (response: any) => {
+        await this.setState({ collections: response.data });
+        console.log(this.state.collections);
+      })
+      .catch(async (error: any) => {
+        message.error(error.error);
+        this.setState({ isSpinVisible: false });
+      });
+  };
   getOneCollection = async () => {
     await getOneCollection()
       .then(async (response: any) => {
-        await this.setState({ collectionData: response.data });
+        if (response.data.attributes.parent.data) {
+          await this.setState({ parentIsAvailable: true });
+        }
+        await this.setState({ collection: response.data });
       })
       .catch(async (error: any) => {
         message.error(error.error.message);
@@ -45,6 +63,7 @@ class Collections extends Component<any, any> {
     if (this.state.check === "edit") {
       await this.getOneCollection();
     }
+    await this.getCollectionsForDropdown();
   };
   showDrawer = () => {
     this.setState({
@@ -52,19 +71,20 @@ class Collections extends Component<any, any> {
     });
   };
   onClose = async () => {
-    await this.setState({ isSpinVisible: false, collectionData: "" });
+    await this.setState({ isSpinVisible: false, collection: "" });
     this.setState({
       visible: false,
     });
     myself.props.closeCollection();
   };
   onFinish = async (values: any) => {
+    console.log(values);
     this.setState({ isSpinVisible: true });
     if (this.state.check === "add") {
       await createCollection(values)
         .then(async (response: any) => {
           if (response && response.data) {
-            message.success("Success");
+            message.success(t("addSuccess"));
             myform.current.resetFields();
             this.setState({
               visible: false,
@@ -82,9 +102,9 @@ class Collections extends Component<any, any> {
       await editCollection(values)
         .then(async (response: any) => {
           if (response && response.data) {
-            message.success(" edit Success ");
+            message.success(t("editSuccess"));
             myform.current.resetFields();
-            await this.setState({ isSpinVisible: false, collectionData: "" });
+            await this.setState({ isSpinVisible: false, collection: "" });
             this.setState({
               visible: false,
             });
@@ -104,16 +124,16 @@ class Collections extends Component<any, any> {
     console.log(value);
   };
   render() {
-    const { check, collectionData } = this.state;
+    const { check, collection, parentIsAvailable } = this.state;
     let title;
     if (check === "edit") {
-      if (!collectionData || !collectionData.attributes) {
+      if (!collection || !collection.attributes) {
         return <div>Loading...</div>;
       }
-      title = "Edit entry";
+      title = t("collection.editTitle");
     }
     if (check === "add") {
-      title = "Add entry manually";
+      title = t("collection.addTitle");
     }
 
     const { Option } = Select;
@@ -127,61 +147,68 @@ class Collections extends Component<any, any> {
           visible={this.state.visible}
           bodyStyle={{ paddingBottom: 80 }}
         >
-          <Form
-            ref={myform}
-            layout="vertical"
-            hideRequiredMark
-            name="basic"
-            labelCol={{ span: 24 }}
-            wrapperCol={{ span: 24 }}
-            initialValues={{
-              remember: true,
-              name: check === "edit" ? collectionData.attributes.name : " ",
-              description:
-                check === "edit" ? collectionData.attributes.description : " ",
-              parent: check === "edit" ? collectionData.attributes.parent : " ",
-            }}
-            onFinish={this.onFinish}
-            onFinishFailed={this.onFinishFailed}
-            autoComplete="off"
-          >
-            <Form.Item
-              label="Collection Name"
-              name="name"
-              rules={[
-                { required: true, message: "Please input your Identifiers!" },
-              ]}
+          <Spin size="large" spinning={this.state.isSpinVisible}>
+            <Form
+              ref={myform}
+              layout="vertical"
+              hideRequiredMark
+              name="basic"
+              labelCol={{ span: 24 }}
+              wrapperCol={{ span: 24 }}
+              initialValues={{
+                remember: true,
+                name: check === "edit" ? collection.attributes.name : " ",
+                description:
+                  check === "edit" ? collection.attributes.description : " ",
+                parent:
+                  check === "edit" && parentIsAvailable
+                    ? collection.attributes.parent.data.attributes.name
+                    : " ",
+              }}
+              onFinish={this.onFinish}
+              onFinishFailed={this.onFinishFailed}
+              autoComplete="off"
             >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="description"
-              label="Description"
-              rules={[{ required: true }]}
-            >
-              <Input.TextArea />
-            </Form.Item>
-            <Form.Item
-              name="parent"
-              label="Parent"
-              rules={[{ required: true }]}
-            >
-              <Select placeholder="Select Parent" allowClear>
-                <Option value="bill">Bill</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item wrapperCol={{ span: 16 }}>
-              <Space>
-                <Button type="primary" htmlType="submit">
-                  Submit
-                </Button>
-                <Button onClick={this.onClose}>Cancel</Button>
-              </Space>
-            </Form.Item>
-          </Form>
+              <Form.Item
+                label={t("collection.CollectionName")}
+                name="name"
+                rules={[
+                  { required: true, message: "Please input your username!" },
+                ]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
+                name="description"
+                label={t("collection.Description")}
+                rules={[{ required: true, message: "description is Required" }]}
+              >
+                <Input.TextArea />
+              </Form.Item>
+              <Form.Item name="parent" label={t("collection.Parent")}>
+                <Select placeholder="Select Parent" allowClear>
+                  {this.state.collections.map((item: any) => {
+                    return (
+                      <Option key={item.id} value={item.id}>
+                        {item.attributes.name}
+                      </Option>
+                    );
+                  })}
+                </Select>
+              </Form.Item>
+              <Form.Item wrapperCol={{ span: 16 }}>
+                <Space>
+                  <Button type="primary" htmlType="submit">
+                    {t("submit")}
+                  </Button>
+                  <Button onClick={this.onClose}>{t("Cancel")}</Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </Spin>
         </Drawer>
       </Spin>
     );
   }
 }
-export default withRouter(Collections);
+export default withTranslation()(withRouter(Collections));

@@ -125,20 +125,49 @@ const getEditReference = async () => {
   });
 };
 const addToCollectionCreateReference = async (
-  referenceType: any,
-  title: any,
-  description: any,
+  selectedItem: any,
   author: any
 ) => {
   return await strapi.create("references", {
-    referenceType: referenceType,
-    title: title,
+    referenceType: selectedItem.attributes.referenceType,
+    title: selectedItem.attributes.title,
+    identifiers: selectedItem.attributes.identifiers,
     authors: author, //array
-    abstract: description,
+    owner: strapi.user!.id,
   });
+};
+const getCollectionsForDropdown = async () => {
+  const query = qs.stringify({
+    populate: "*",
+    filters: {
+      $and: [
+        {
+          owner: {
+            id: {
+              $eq: strapi.user!.id,
+            },
+          },
+        },
+        // {
+        //   collections: {
+        //     trash: {
+        //       $eq: false,
+        //     },
+        //   },
+        // },
+        {
+          trash: {
+            $eq: false,
+          },
+        },
+      ],
+    },
+  });
+  return await strapi.find(`collections?${query}`);
 };
 const getCollections = async () => {
   const query = qs.stringify({
+    populate: "*",
     filters: {
       $and: [
         {
@@ -154,6 +183,20 @@ const getCollections = async () => {
           },
         },
       ],
+      // $or: [
+      //   {
+      //     collections: {
+      //       trash: {
+      //         $eq: false,
+      //       },
+      //     },
+      //   },
+      //   // {
+      //   //   parent: {
+      //   //     $eq: null,
+      //   //   },
+      //   // },
+      // ],
     },
   });
   return await strapi.find(`collections?${query}`);
@@ -231,14 +274,58 @@ const getCollectionReferences = async (id: any) => {
   });
   return await strapi.find(`references?${query}`);
 };
+const getSearchReferences = async (value: any) => {
+  const query = qs.stringify({
+    populate: "*",
+    filters: {
+      $and: [
+        {
+          owner: {
+            id: {
+              $eq: strapi.user!.id,
+            },
+          },
+        },
+        {
+          trash: {
+            $eq: false,
+          },
+        },
+      ],
+      $or: [
+        {
+          authors: {
+            name: {
+              $eq: value,
+            },
+          },
+        },
+        {
+          title: {
+            $eq: value,
+          },
+        },
+        {
+          Identifiers: {
+            $eq: value,
+          },
+        },
+      ],
+    },
+  });
+  return await strapi.find(`references?${query}`);
+};
 const getOneCollection = async () => {
-  return await strapi.findOne("collections", GlobalVars.collectionId);
+  return await strapi.findOne("collections", GlobalVars.collectionId, {
+    populate: "*",
+  });
 };
 const editCollection = async (values: any) => {
   return await strapi.update("collections", GlobalVars.collectionId, {
     name: values.name,
     description: values.description,
     parent: values.parent,
+    owner: strapi.user!.id,
   });
 };
 const setReference = async (values: any) => {
@@ -261,9 +348,16 @@ const restoreReference = async (id: any) => {
   });
 };
 const deleteCollection = async () => {
-  return await strapi.update("collections", GlobalVars.collectionId, {
-    trash: true,
-  });
+  return await strapi.update(
+    "collections",
+    GlobalVars.collectionId,
+    {
+      trash: true,
+    },
+    {
+      populate: "*",
+    }
+  );
 };
 export {
   logOut,
@@ -274,6 +368,7 @@ export {
   deleteReferencePermanently,
   createReference,
   setReference,
+  getSearchReferences,
   getTrashReferences,
   deleteCollection,
   editCollection,
@@ -283,6 +378,7 @@ export {
   getCollectionReferences,
   logIn,
   getOneCollection,
+  getCollectionsForDropdown,
   createCollection,
   isLoggedIn,
   getCollections,
