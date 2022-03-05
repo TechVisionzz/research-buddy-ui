@@ -1,5 +1,5 @@
 FROM node:16 AS builder
-ENV NODE_ENV production
+#ENV NODE_ENV production
 # Add a work directory
 WORKDIR /app
 # Cache and Install dependencies
@@ -10,6 +10,7 @@ RUN sed -i -e "s|\"http\:\/\/localhost\:1337\"|window._env_.STRAPI_URL|g" ./node
 
 RUN sed -i -e "s|defu(options \|\| {}, defaults);|defaults;|g" ./node_modules/strapi-sdk-js/dist/index.mjs
 
+RUN more ./node_modules/strapi-sdk-js/dist/index.mjs
 # Copy app files
 COPY . .
 # Build the app
@@ -34,7 +35,7 @@ RUN apk add --no-cache bash
 
 # Make our shell script executable
 RUN chmod +x env.sh
-
+RUN chmod +r init.js
 
 # Start nginx
 #CMD ["nginx", "-g", "daemon off;"]
