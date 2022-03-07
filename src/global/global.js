@@ -3,6 +3,7 @@ export class GlobalVars {
   static referenceId;
   static editReferenceId;
   static direction;
+  static userName;
 }
 let tokenstore = window.sessionStorage;
 export { tokenstore }

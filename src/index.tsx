@@ -6,6 +6,8 @@ import "./i18n";
 import reportWebVitals from "./reportWebVitals";
 import { ConfigProvider } from "antd";
 import { GlobalVars, tokenstore } from "./global/global";
+import { I18nextProvider } from "react-i18next";
+import i18n from "./i18n";
 ReactDOM.render(
   <ConfigProvider direction={tokenstore.direction}>
     <App />

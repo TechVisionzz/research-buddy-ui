@@ -10,7 +10,8 @@ import { GlobalVars, tokenstore } from "../global/global";
 import { t } from "i18next";
 import { withTranslation } from "react-i18next";
 import Language from "./Language";
-var myself: any;
+import { count } from "console";
+var myself: any, words: any;
 class AppMenu extends Component<any, any> {
   constructor(props: any) {
     super(props);
@@ -20,26 +21,6 @@ class AppMenu extends Component<any, any> {
       current: "1",
     };
   }
-  // changeLanguage = async (lng: any) => {
-  //   if (lng == "ar") {
-  //     tokenstore.i18nextLng = "ar";
-  //     tokenstore.direction = "rtl";
-  //   }
-  //   if (lng == "ur") {
-  //     tokenstore.i18nextLng = "ur";
-  //     tokenstore.direction = "rtl";
-  //   }
-  //   if (lng == "en") {
-  //     tokenstore.i18nextLng = "en";
-  //     tokenstore.direction = "ltr";
-  //   }
-  //   i18n.changeLanguage(lng);
-  //   this.openNotification();
-  //   setTimeout(() => {
-  //     myself.props.history.push("/dashboard");
-  //     window.location.reload();
-  //   }, 1200);
-  // };
   openNotification = () => {
     const args = {
       message: "Note",
@@ -55,6 +36,24 @@ class AppMenu extends Component<any, any> {
     this.setState({ isSpinVisible: false });
   };
   render() {
+    var name: any;
+    words = GlobalVars.userName.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+    }
+    words.join(" ");
+    var counter = 0;
+    words.map((item: any) => {
+      if (counter === 0) {
+        name = item;
+        counter++;
+      } else {
+        name = name + " " + item;
+      }
+    });
+    if (!name) {
+      return <div>Loading...</div>;
+    }
     const { Header } = Layout;
     const handleClick = (e: any) => {
       this.setState({ current: e.key });
@@ -78,27 +77,6 @@ class AppMenu extends Component<any, any> {
                 <Link to="/dashBoard">{t("appmenu.library")}</Link>
               </Menu.Item>
               <Language />
-              {/* <SubMenu
-                key="language"
-                icon={<SettingOutlined />}
-                title="Language"
-              >
-                <Menu.Item
-                  key="english"
-                  onClick={() => this.changeLanguage("en")}
-                >
-                  English
-                </Menu.Item>
-                <Menu.Item key="urdu" onClick={() => this.changeLanguage("ur")}>
-                  Urdu
-                </Menu.Item>
-                <Menu.Item
-                  key="arabic"
-                  onClick={() => this.changeLanguage("ar")}
-                >
-                  Arabic
-                </Menu.Item>
-              </SubMenu> */}
               <SubMenu
                 key="SubMenu"
                 icon={
@@ -108,12 +86,8 @@ class AppMenu extends Component<any, any> {
                     icon={<UserOutlined />}
                   />
                 }
-                title="Ahtasham Naeem"
+                title={name}
               >
-                {/* <Menu.Item key="settings">Settings</Menu.Item>
-                <Menu.Item key="privacyCenter">Privacy Center</Menu.Item>
-                <Menu.Item key="helpGuides">Help Guides</Menu.Item>
-                <Menu.Item key="supportCenter">Support Center</Menu.Item> */}
                 <Menu.Item onClick={this.logout} key="5">
                   {t("appmenu.SignOut")}
                 </Menu.Item>

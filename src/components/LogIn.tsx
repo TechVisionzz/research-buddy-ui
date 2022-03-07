@@ -6,6 +6,7 @@ import { isLoggedIn, logIn } from "./commonHelper";
 import Language from "./Language";
 import { t } from "i18next";
 import { withTranslation } from "react-i18next";
+import { GlobalVars } from "../global/global";
 var myself: any;
 class Login extends Component<any, any> {
   constructor(props: any) {

@@ -18,6 +18,9 @@ const logIn = async (values: any) => {
   });
 };
 const isLoggedIn = () => {
+  if (strapi.user) {
+    GlobalVars.userName = strapi.user!.username;
+  }
   return strapi.user ? true : false;
 };
 const logOut = () => {
