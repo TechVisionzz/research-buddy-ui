@@ -12,6 +12,8 @@ import {
   Button,
   message,
   Radio,
+  Tooltip,
+  Popover,
 } from "antd";
 import Search from "antd/lib/input/Search";
 import {
@@ -72,6 +74,7 @@ class SeacrchBook extends Component<any, any> {
         );
         // Books result
         if (response.data.items.length >= 1) {
+          console.log(response.data);
           response.data.items.map(async (item: any) => {
             var referenceType = item.kind;
             const type1 = referenceType.split("#");
@@ -84,6 +87,10 @@ class SeacrchBook extends Component<any, any> {
             if (item.volumeInfo.industryIdentifiers) {
               identifier = item.volumeInfo.industryIdentifiers[0].identifier;
             }
+            var picture;
+            if (item.volumeInfo.imageLinks) {
+              picture = item.volumeInfo.imageLinks.thumbnail;
+            }
             var data = {
               attributes: {
                 source: "google",
@@ -91,6 +98,7 @@ class SeacrchBook extends Component<any, any> {
                 referenceType: referenceType,
                 author: item.volumeInfo.authors,
                 identifier: identifier,
+                picture: picture,
               },
             };
             this.state.bookDetail.push(data);
@@ -99,36 +107,39 @@ class SeacrchBook extends Component<any, any> {
         }
       }
       //local search
-      await getSearchReferences(value)
-        .then(async (response: any) => {
-          if (response && response.data) {
-            if (response.data.length >= 1) {
-              await this.setState({ isSpinVisible: false });
-              console.log(response.data);
-              var data;
-              response.data.map((item: any) => {
-                // console.log(item.attributes);
-                data = {
-                  attributes: {
-                    source: "local",
-                    title: item.attributes.title,
-                    referenceType: item.attributes.referenceType,
-                    author: item.attributes.authors,
-                    identifier: item.attributes.identifier,
-                  },
-                };
-              });
-              await this.setState({
-                bookDetail: [...this.state.bookDetail, data],
-              });
-              console.log(this.state.bookDetail);
+      if (this.state.source === "local") {
+        await getSearchReferences(value)
+          .then(async (response: any) => {
+            if (response && response.data) {
+              if (response.data.length >= 1) {
+                await this.setState({ isSpinVisible: false });
+                console.log(response.data);
+                var data;
+                response.data.map(async (item: any) => {
+                  console.log(item.attributes);
+                  data = {
+                    attributes: {
+                      source: "local",
+                      title: item.attributes.title,
+                      referenceType: item.attributes.referenceType,
+                      author: item.attributes.authors,
+                      identifier: item.attributes.identifier,
+                      picture: item.attributes.picture,
+                    },
+                  };
+                  await this.setState({
+                    bookDetail: [...this.state.bookDetail, data],
+                  });
+                  console.log(this.state.bookDetail);
+                });
+              }
             }
-          }
-        })
-        .catch(async (error: any) => {
-          message.error(error.error);
-          this.setState({ isSpinVisible: false });
-        });
+          })
+          .catch(async (error: any) => {
+            message.error(error.error);
+            this.setState({ isSpinVisible: false });
+          });
+      }
     }
     await this.setState({
       isSpinVisible: false,
@@ -166,7 +177,30 @@ class SeacrchBook extends Component<any, any> {
       });
   };
   onChange = async (e: any) => {
-    await this.setState({ source: e.target.value });
+    await this.setState({ bookDetail: [], source: e.target.value });
+  };
+  getDetail = (bookDetail: any) => {
+    return (
+      <div>
+        <p>Reference Type : {bookDetail.attributes.referenceType}</p>
+        <p>Identifier : {bookDetail.attributes.identifier}</p>
+        {(() => {
+          if (this.state.source === "local") {
+            return bookDetail.attributes.author.data.map((item: any) => {
+              return <p>Auther : {item.attributes.name}</p>;
+            });
+          }
+          if (
+            this.state.source === "google" ||
+            this.state.source === "openlibrary"
+          ) {
+            return bookDetail.attributes.author.map((item: any) => {
+              return <p>Auther : {item}</p>;
+            });
+          }
+        })()}
+      </div>
+    );
   };
   render() {
     const { Title } = Typography;
@@ -201,10 +235,15 @@ class SeacrchBook extends Component<any, any> {
               </Descriptions.Item>
               <Descriptions.Item>
                 <Title className="searchAlign" level={5}>
-                  Source :
-                  <Radio.Group onChange={this.onChange}>
-                    <Radio value="google"> google</Radio>
-                    <Radio value="openlibrary">open library</Radio>
+                  {t("searchBook.source")}
+                  <Radio.Group defaultValue={"local"} onChange={this.onChange}>
+                    <Radio checked value="local">
+                      {t("searchBook.local")}
+                    </Radio>
+                    <Radio value="google">{t("searchBook.google")} </Radio>
+                    <Radio value="openlibrary">
+                      {t("searchBook.openlibrary")}
+                    </Radio>
                   </Radio.Group>
                 </Title>
               </Descriptions.Item>
@@ -223,36 +262,53 @@ class SeacrchBook extends Component<any, any> {
               return bookDetail.map((bookDetail: any, index: any) => {
                 return (
                   <Col className="gutter-row" key={index}>
-                    <Card
-                      hoverable
-                      key={index}
-                      style={{ width: 280 }}
-                      cover={
-                        <img
-                          alt="example"
-                          src="https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png"
-                          style={{ height: "300px" }}
-                        />
-                      }
-                      actions={[
-                        <Button
-                          id={bookDetail.id}
-                          onClick={() => this.addToCollection(bookDetail.id)}
-                          type="primary"
-                          size={"small"}
-                        >
-                          Add To Collection
-                        </Button>,
-                      ]}
+                    <Popover
+                      // key={index}
+                      content={this.getDetail(bookDetail)}
+                      title="Detail"
                     >
-                      <Meta
-                        avatar={
-                          <Avatar src="https://joeschmoe.io/api/v1/random" />
+                      <Card
+                        hoverable
+                        style={{ width: 280 }}
+                        cover={
+                          <img
+                            alt="example"
+                            src={
+                              bookDetail.attributes.picture
+                                ? bookDetail.attributes.picture
+                                : "book.jpg"
+                            }
+                            style={{ height: "300px" }}
+                          />
                         }
-                        description={"Source : " + bookDetail.attributes.source}
-                        title={bookDetail.attributes.title}
-                      />
-                    </Card>
+                        actions={[
+                          <Button
+                            id={bookDetail.id}
+                            onClick={() => this.addToCollection(bookDetail.id)}
+                            type="primary"
+                            size={"small"}
+                          >
+                            {t("searchBook.AddToCollection")}
+                          </Button>,
+                        ]}
+                      >
+                        <Meta
+                          avatar={
+                            <Avatar
+                              src={
+                                bookDetail.attributes.picture
+                                  ? bookDetail.attributes.picture
+                                  : "book.jpg"
+                              }
+                            />
+                          }
+                          description={
+                            "Source : " + bookDetail.attributes.source
+                          }
+                          title={bookDetail.attributes.title}
+                        />
+                      </Card>
+                    </Popover>
                   </Col>
                 );
               });

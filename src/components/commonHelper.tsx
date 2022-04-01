@@ -22,6 +22,7 @@ const isLoggedIn = () => {
     GlobalVars.userName = strapi.user!.username;
   }
   return strapi.user ? true : false;
+  // return true;
 };
 const logOut = () => {
   return strapi.logout();
@@ -135,6 +136,7 @@ const addToCollectionCreateReference = async (
     referenceType: selectedItem.attributes.referenceType,
     title: selectedItem.attributes.title,
     identifiers: selectedItem.attributes.identifiers,
+    picture: selectedItem.attributes.picture,
     authors: author, //array
     owner: strapi.user!.id,
   });

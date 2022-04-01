@@ -255,11 +255,7 @@ class ReferenceEdit extends Component<any, any> {
     }
     const { Option } = Select;
     var volume = (
-      <Form.Item
-        name="volume"
-        label={t("reference.Volume")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="volume" label={t("reference.Volume")}>
         <Input />
       </Form.Item>
     );
@@ -267,7 +263,6 @@ class ReferenceEdit extends Component<any, any> {
       <Form.Item
         name="year"
         label={t("reference.Year")}
-        rules={[{ required: true }]}
         style={{
           display: "inline-block",
         }}
@@ -276,20 +271,12 @@ class ReferenceEdit extends Component<any, any> {
       </Form.Item>
     );
     var city = (
-      <Form.Item
-        name="city"
-        label={t("reference.City")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="city" label={t("reference.City")}>
         <Input />
       </Form.Item>
     );
     var code = (
-      <Form.Item
-        name="code"
-        label={t("reference.Code")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="code" label={t("reference.Code")}>
         <Input />
       </Form.Item>
     );
@@ -302,7 +289,6 @@ class ReferenceEdit extends Component<any, any> {
       >
         <Form.Item
           name="from"
-          rules={[{ required: true }]}
           style={{
             display: "inline-block",
             width: "calc(50%)",
@@ -312,7 +298,6 @@ class ReferenceEdit extends Component<any, any> {
         </Form.Item>
         <Form.Item
           name="to"
-          rules={[{ required: true }]}
           style={{
             display: "inline-block",
             width: "calc(50%)",
@@ -323,83 +308,47 @@ class ReferenceEdit extends Component<any, any> {
       </Form.Item>
     );
     var edition = (
-      <Form.Item
-        name="edition"
-        label={t("reference.Edition")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="edition" label={t("reference.Edition")}>
         <Input />
       </Form.Item>
     );
     var editors = (
-      <Form.Item
-        name="editors"
-        label={t("reference.Editors")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="editors" label={t("reference.Editors")}>
         <Select mode="tags" placeholder="Please select"></Select>
       </Form.Item>
     );
     var publisher = (
-      <Form.Item
-        name="publisher"
-        label={t("reference.Publisher")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="publisher" label={t("reference.Publisher")}>
         <Input />
       </Form.Item>
     );
     var distributor = (
-      <Form.Item
-        name="distributor"
-        label={t("reference.Distributor")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="distributor" label={t("reference.Distributor")}>
         <Input />
       </Form.Item>
     );
     var country = (
-      <Form.Item
-        name="country"
-        label={t("reference.Country")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="country" label={t("reference.Country")}>
         <Input />
       </Form.Item>
     );
     var publication = (
-      <Form.Item
-        name="publication"
-        label={t("reference.Publication")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="publication" label={t("reference.Publication")}>
         <Input />
       </Form.Item>
     );
     var institution = (
-      <Form.Item
-        name="institution"
-        label={t("reference.Institution")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="institution" label={t("reference.Institution")}>
         <Input />
       </Form.Item>
     );
     var number = (
-      <Form.Item
-        name="number"
-        label={t("reference.Number")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="number" label={t("reference.Number")}>
         <Input />
       </Form.Item>
     );
     var issue = (
-      <Form.Item
-        name="issue"
-        label={t("reference.Issue")}
-        rules={[{ required: true }]}
-      >
+      <Form.Item name="issue" label={t("reference.Issue")}>
         <Input />
       </Form.Item>
     );

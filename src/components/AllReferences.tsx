@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, createRef } from "react";
 import {
   Form,
   Button,
@@ -32,15 +32,28 @@ import { GlobalVars } from "../global/global";
 import moment from "moment";
 import { getTemplate } from "./csl";
 import { Link, withRouter } from "react-router-dom";
+import { CSVLink, CSVDownload } from "react-csv";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import ReferenceEdit from "./ReferenceEdit";
 import { t } from "i18next";
 import { withTranslation } from "react-i18next";
 const { Cite, plugins } = require("@citation-js/core");
 require("@citation-js/plugin-csl");
-var myself: any, type: any;
+var myself: any, type: any, myform: any;
 let allRefereces: any;
+myform = createRef();
 var language = "en-US";
+const headers = [
+  { label: "Title", key: "attributes.title" },
+  { label: "Type", key: "attributes.referenceType" },
+  { label: "Edition", key: "attributes.edition" },
+  { label: "Publisher", key: "attributes.publisher" },
+  { label: "Year", key: "attributes.year" },
+  { label: "Month", key: "attributes.month" },
+  { label: "Day", key: "attributes.day" },
+];
+var data: any;
+data = [];
 class AllReferences extends Component<any, any> {
   searchInput: any;
   formRef = React.createRef<FormInstance>();
@@ -58,6 +71,8 @@ class AllReferences extends Component<any, any> {
       isModalVisible: false,
       isExportModalVisible: false,
       open: false,
+      loading: false,
+      reference: [],
       multipleExportModal: false,
       selectedExportModal: false,
       editIdentifier: " ",
@@ -237,6 +252,7 @@ class AllReferences extends Component<any, any> {
         text
       ),
   });
+
   handleSearch = (selectedKeys: any, confirm: any, dataIndex: any) => {
     console.log(selectedKeys);
     this.setState({
@@ -262,76 +278,51 @@ class AllReferences extends Component<any, any> {
         this.setState({ isSpinVisible: false });
       });
   };
-  exportSingleReference = () => {
-    var selectedItem = this.state.referenceData.find(
-      (item: any) => item.id === GlobalVars.referenceId
-    );
-    if (selectedItem) {
-      const dateFormatYear = "YYYY";
-      const dateFormatMonth = "MM";
-      const dateFormatYearDay = "DD";
-      var dateYear = moment(selectedItem.attributes.publication).format(
-        dateFormatYear
+  exportSingleReference = async () => {
+    if (type === "csv") {
+      var selectedItem = this.state.referenceData.find(
+        (item: any) => item.id === GlobalVars.referenceId
       );
-      var dateMonth = moment(selectedItem.attributes.publication).format(
-        dateFormatMonth
-      );
-      var dateDay = moment(selectedItem.attributes.publication).format(
-        dateFormatYearDay
-      );
-      var payload = {
-        id: selectedItem.id,
-        title: selectedItem.attributes.title,
-        type: selectedItem.attributes.type,
-        edition: selectedItem.attributes.edition,
-        publisher: selectedItem.attributes.publisher,
-        doi: "123",
-        author: [
-          {
-            family: "ali",
-            given: "khan",
+      if (selectedItem) {
+        console.log(selectedItem);
+        var downloadObject = {
+          attributes: {
+            title: selectedItem.attributes.title,
+            referenceType: selectedItem.attributes.referenceType,
+            edition: selectedItem.attributes.edition,
+            publisher: selectedItem.attributes.publisher,
+            year: selectedItem.attributes.year,
+            month: selectedItem.attributes.month,
+            day: selectedItem.attributes.day,
           },
-        ],
-        issued: [{ "date-parts": [dateYear, dateMonth, dateDay] }],
-      };
-      let config = plugins.config.get("@csl");
-      config.templates.add(type, getTemplate(type));
-      //passing payload to the site to make biblography
-      var myCite = new Cite(payload);
-      //create citation in html format
-      let output = myCite.format("bibliography", {
-        format: "html",
-        template: type,
-        lang: language,
-      });
-      //to make the link of out and download this file in html format
-      const fileName = "file";
-      const blob = new Blob([output], { type: "application/html" });
-      const href = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = href;
-      link.download = fileName + ".html";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-  exportAllRefereces = () => {
-    allRefereces = [];
-    if (this.state.referenceData.length !== 0) {
-      this.state.referenceData.map((item: any) => {
+        };
+        data.push(downloadObject);
+        console.log(data);
+        this.setState({ loading: true });
+      }
+    } else {
+      var selectedItem = this.state.referenceData.find(
+        (item: any) => item.id === GlobalVars.referenceId
+      );
+      if (selectedItem) {
         const dateFormatYear = "YYYY";
         const dateFormatMonth = "MM";
         const dateFormatYearDay = "DD";
-        var dateYear = moment(moment.now()).format(dateFormatYear);
-        var dateMonth = moment(moment.now()).format(dateFormatMonth);
-        var dateDay = moment(moment.now()).format(dateFormatYearDay);
+        var dateYear = moment(selectedItem.attributes.publication).format(
+          dateFormatYear
+        );
+        var dateMonth = moment(selectedItem.attributes.publication).format(
+          dateFormatMonth
+        );
+        var dateDay = moment(selectedItem.attributes.publication).format(
+          dateFormatYearDay
+        );
         var payload = {
-          id: item.id,
-          title: item.attributes.title,
-          type: item.attributes.type,
-          edition: item.attributes.edition,
-          publisher: item.attributes.publisher,
+          id: selectedItem.id,
+          title: selectedItem.attributes.title,
+          type: selectedItem.attributes.type,
+          edition: selectedItem.attributes.edition,
+          publisher: selectedItem.attributes.publisher,
           doi: "123",
           author: [
             {
@@ -341,28 +332,95 @@ class AllReferences extends Component<any, any> {
           ],
           issued: [{ "date-parts": [dateYear, dateMonth, dateDay] }],
         };
-        allRefereces.push(payload);
+        let config = plugins.config.get("@csl");
+        config.templates.add(type, getTemplate(type));
+        //passing payload to the site to make biblography
+        var myCite = new Cite(payload);
+        //create citation in html format
+        let output = myCite.format("bibliography", {
+          format: "html",
+          template: type,
+          lang: language,
+        });
+        //to make the link of out and download this file in html format
+        const fileName = "file";
+        const blob = new Blob([output], { type: "html" });
+        const href = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = href;
+        link.download = fileName + ".html";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+  };
+  exportAllRefereces = () => {
+    allRefereces = [];
+    if (type === "csv") {
+      this.state.referenceData.map((item: any) => {
+        var downloadObject = {
+          attributes: {
+            title: item.attributes.title,
+            referenceType: item.attributes.referenceType,
+            edition: item.attributes.edition,
+            publisher: item.attributes.publisher,
+            year: item.attributes.year,
+            month: item.attributes.month,
+            day: item.attributes.day,
+          },
+        };
+        data.push(downloadObject);
+        console.log(data);
       });
-      //fetch template
-      let config = plugins.config.get("@csl");
-      config.templates.add(language, getTemplate(type));
-      //create citation in html format
-      var myCite = new Cite(allRefereces);
-      let output = myCite.format("bibliography", {
-        format: "html",
-        template: type,
-        lang: language,
-      });
-      //to make the link of out and download this file in html format
-      const fileName = "file";
-      const blob = new Blob([output], { type: "application/html" });
-      const href = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = href;
-      link.download = fileName + ".html";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      this.setState({ loading: true });
+    } else {
+      if (this.state.referenceData.length !== 0) {
+        this.state.referenceData.map((item: any) => {
+          const dateFormatYear = "YYYY";
+          const dateFormatMonth = "MM";
+          const dateFormatYearDay = "DD";
+          var dateYear = moment(moment.now()).format(dateFormatYear);
+          var dateMonth = moment(moment.now()).format(dateFormatMonth);
+          var dateDay = moment(moment.now()).format(dateFormatYearDay);
+          var payload = {
+            id: item.id,
+            title: item.attributes.title,
+            type: item.attributes.type,
+            edition: item.attributes.edition,
+            publisher: item.attributes.publisher,
+            doi: "123",
+            author: [
+              {
+                family: "ali",
+                given: "khan",
+              },
+            ],
+            issued: [{ "date-parts": [dateYear, dateMonth, dateDay] }],
+          };
+          allRefereces.push(payload);
+        });
+        //fetch template
+        let config = plugins.config.get("@csl");
+        config.templates.add(language, getTemplate(type));
+        //create citation in html format
+        var myCite = new Cite(allRefereces);
+        let output = myCite.format("bibliography", {
+          format: "html",
+          template: type,
+          lang: language,
+        });
+        //to make the link of out and download this file in html format
+        const fileName = "file";
+        const blob = new Blob([output], { type: "html" });
+        const href = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = href;
+        link.download = fileName + ".html";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
   };
   closeReference = async () => {
@@ -415,62 +473,87 @@ class AllReferences extends Component<any, any> {
   };
   exportSelectedRefereces = async () => {
     allRefereces = [];
-    this.state.selectedRowKeys.map((item: any) => {
-      var selectedItem = this.state.referenceData.find(
-        (item1: any) => item1.id === item
-      );
-      console.log(selectedItem);
-      if (selectedItem) {
-        const dateFormatYear = "YYYY";
-        const dateFormatMonth = "MM";
-        const dateFormatYearDay = "DD";
-        var dateYear = moment(selectedItem.attributes.publication).format(
-          dateFormatYear
+    if (type === "csv") {
+      this.state.selectedRowKeys.map((item: any) => {
+        var selectedItem = this.state.referenceData.find(
+          (item1: any) => item1.id === item
         );
-        var dateMonth = moment(selectedItem.attributes.publication).format(
-          dateFormatMonth
-        );
-        var dateDay = moment(selectedItem.attributes.publication).format(
-          dateFormatYearDay
-        );
-        var payload = {
-          id: selectedItem.id,
-          title: selectedItem.attributes.title,
-          type: selectedItem.attributes.type,
-          edition: selectedItem.attributes.edition,
-          publisher: selectedItem.attributes.publisher,
-          doi: "123",
-          author: [
-            {
-              family: "ali",
-              given: "khan",
+        if (selectedItem) {
+          var downloadObject = {
+            attributes: {
+              title: selectedItem.attributes.title,
+              referenceType: selectedItem.attributes.referenceType,
+              edition: selectedItem.attributes.edition,
+              publisher: selectedItem.attributes.publisher,
+              year: selectedItem.attributes.year,
+              month: selectedItem.attributes.month,
+              day: selectedItem.attributes.day,
             },
-          ],
-          issued: [{ "date-parts": [dateYear, dateMonth, dateDay] }],
-        };
-        allRefereces.push(payload);
-      }
-    });
-    let config = plugins.config.get("@csl");
-    config.templates.add(type, getTemplate(type));
-    //passing payload to the site to make biblography
-    var myCite = new Cite(allRefereces);
-    //create citation in html format
-    let output = myCite.format("bibliography", {
-      format: "html",
-      template: type,
-      lang: language,
-    });
-    //to make the link of out and download this file in html format
-    const fileName = "file";
-    const blob = new Blob([output], { type: "application/html" });
-    const href = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = href;
-    link.download = fileName + ".html";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+          };
+          data.push(downloadObject);
+          console.log(data);
+        }
+      });
+      this.setState({ loading: true });
+    } else {
+      this.state.selectedRowKeys.map((item: any) => {
+        var selectedItem = this.state.referenceData.find(
+          (item1: any) => item1.id === item
+        );
+        console.log(selectedItem);
+        if (selectedItem) {
+          const dateFormatYear = "YYYY";
+          const dateFormatMonth = "MM";
+          const dateFormatYearDay = "DD";
+          var dateYear = moment(selectedItem.attributes.publication).format(
+            dateFormatYear
+          );
+          var dateMonth = moment(selectedItem.attributes.publication).format(
+            dateFormatMonth
+          );
+          var dateDay = moment(selectedItem.attributes.publication).format(
+            dateFormatYearDay
+          );
+          var payload = {
+            id: selectedItem.id,
+            title: selectedItem.attributes.title,
+            type: selectedItem.attributes.type,
+            edition: selectedItem.attributes.edition,
+            publisher: selectedItem.attributes.publisher,
+            doi: "123",
+            author: [
+              {
+                family: "ali",
+                given: "khan",
+              },
+            ],
+            issued: [{ "date-parts": [dateYear, dateMonth, dateDay] }],
+          };
+          allRefereces.push(payload);
+        }
+      });
+      let config = plugins.config.get("@csl");
+      config.templates.add(type, getTemplate(type));
+      console.log(allRefereces);
+      //passing payload to the site to make biblography
+      var myCite = new Cite(allRefereces);
+      //create citation in html format
+      let output = myCite.format("bibliography", {
+        format: "html",
+        template: type,
+        lang: language,
+      });
+      //to make the link of out and download this file in html format
+      const fileName = "file";
+      const blob = new Blob([output], { type: "html" });
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = fileName + ".html";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
   closeCollectionModel = async () => {
     this.setState({ isModalVisible: false });
@@ -483,6 +566,9 @@ class AllReferences extends Component<any, any> {
   };
   closeselectedExportModal = async () => {
     this.setState({ selectedExportModal: false });
+  };
+  closeDownloadModel = async () => {
+    this.setState({ loading: false });
   };
   render() {
     const { Option } = Select;
@@ -498,7 +584,8 @@ class AllReferences extends Component<any, any> {
         </Menu.Item>
       </Menu>
     );
-    const { selectedRowKeys, referenceData, title } = this.state;
+    const { selectedRowKeys, referenceData, title, loading, reference } =
+      this.state;
     const hasSelected = selectedRowKeys.length > 0;
     const rowSelection = {
       selectedRowKeys,
@@ -677,6 +764,7 @@ class AllReferences extends Component<any, any> {
             className="marginForm"
             initialValues={{ remember: true }}
             onFinish={this.openSingleReferenceModel}
+            ref={myform}
           >
             <Form.Item
               name="referenceStyle"
@@ -687,6 +775,7 @@ class AllReferences extends Component<any, any> {
                 <Option value="Chicago">{t("allReference.Chicago")}</Option>
                 <Option value="MLA">{t("allReference.MLA")}</Option>
                 <Option value="APA">{t("allReference.APA")}</Option>
+                <Option value="csv">{t("allReference.CSV")}</Option>
               </Select>
             </Form.Item>
             <Form.Item>
@@ -718,6 +807,7 @@ class AllReferences extends Component<any, any> {
                 <Option value="Chicago">{t("allReference.Chicago")}</Option>
                 <Option value="MLA">{t("allReference.MLA")}</Option>
                 <Option value="APA">{t("allReference.APA")}</Option>
+                <Option value="csv">{t("allReference.CSV")}</Option>
               </Select>
             </Form.Item>
             <Form.Item>
@@ -749,6 +839,7 @@ class AllReferences extends Component<any, any> {
                 <Option value="Chicago">{t("allReference.Chicago")}</Option>
                 <Option value="MLA">{t("allReference.MLA")}</Option>
                 <Option value="APA">{t("allReference.APA")}</Option>
+                <Option value="csv">{t("allReference.CSV")}</Option>
               </Select>
             </Form.Item>
             <Form.Item>
@@ -757,6 +848,17 @@ class AllReferences extends Component<any, any> {
               </Button>
             </Form.Item>
           </Form>
+        </Modal>
+        {/* download file model */}
+        <Modal
+          style={{ width: 100 }}
+          footer={null}
+          visible={this.state.loading}
+          onCancel={this.closeDownloadModel}
+        >
+          <CSVLink data={data} headers={headers}>
+            {!loading ? " " : "Download me"}
+          </CSVLink>
         </Modal>
         <Table
           rowSelection={rowSelection}

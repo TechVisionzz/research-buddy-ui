@@ -12,7 +12,20 @@
         "title": "Welcome to Research Buddy",
         "subTitle": "Search for and add articles to your library",
         "search": "search",
-        "placeholder": "Enter ISBN ,Author Name or Book name to Search "
+        "placeholder": "Enter ISBN ,Author Name or Book name to Search ",
+        "AddToCollection": "Add To Collection",
+        "openlibrary": "open library",
+        "google": "google",
+        "local": "local",
+        "source": "Source :"
+
+
+    },
+    "ReferenceAutomatically": {
+        "SelectCSVFile": "Select CSV File",
+        "DisplayData": "Display Data",
+        "AddSelectedReferences": "Add Selected References",
+        "error": "You do not choose csv File or csv Format is not Correct!"
 
     },
     "reference": {
@@ -84,7 +97,8 @@
         "AddNew": "Add New",
         "AllReferences": "All References",
         "Trash": "Trash",
-        "Collections": "Collections"
+        "Collections": "Collections",
+        "CSVFromComputer": "CSV From Computer"
     },
     "collection": {
         "CollectionName": "Collection Name",
@@ -119,7 +133,8 @@
         "Style": "Style",
         "Chicago": "Chicago",
         "MLA": "MLA",
-        "APA": "APA"
+        "APA": "APA",
+        "CSV": "CSV"
     },
     "login": {
         "error": "userName or Password is Incorrect",

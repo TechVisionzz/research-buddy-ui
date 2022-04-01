@@ -7,6 +7,8 @@ import {
   message,
   notification,
   Tree,
+  Button,
+  Upload,
 } from "antd";
 import { PlusCircleOutlined, DownOutlined } from "@ant-design/icons";
 import { Link, withRouter } from "react-router-dom";
@@ -21,6 +23,7 @@ import { deleteCollection, getCollections } from "./commonHelper";
 import { t } from "i18next";
 import { withTranslation } from "react-i18next";
 import SubMenu from "antd/lib/menu/SubMenu";
+import ReferenceAutomatically from "./ReferenceAutomatically";
 var myself: any;
 class DashBoard extends Component<any, any> {
   constructor(props: any) {
@@ -31,14 +34,19 @@ class DashBoard extends Component<any, any> {
       current: "1",
       open: false,
       openCollection: false,
+      openReferenceAutomatically: false,
       collections: [],
       check: " ",
       identifier: " ",
     };
     this.openCitation = this.openCitation.bind(this);
+    this.openReferenceAutomatically =
+      this.openReferenceAutomatically.bind(this);
     this.openAddCollection = this.openAddCollection.bind(this);
     this.openEditCollection = this.openEditCollection.bind(this);
     this.closeReference = this.closeReference.bind(this);
+    this.closeReferenceAutomatically =
+      this.closeReferenceAutomatically.bind(this);
     this.closeCollections = this.closeCollections.bind(this);
     this.parentMenu = this.parentMenu.bind(this);
   }
@@ -63,9 +71,17 @@ class DashBoard extends Component<any, any> {
   openCitation = async () => {
     this.setState({ open: true });
   };
+
+  openReferenceAutomatically = async () => {
+    this.setState({ openReferenceAutomatically: true });
+  };
   closeReference = async () => {
     await this.setState({ identifier: "all" });
     this.setState({ open: false, isSpinVisible: true });
+  };
+  closeReferenceAutomatically = async () => {
+    await this.setState({ identifier: "all" });
+    this.setState({ openReferenceAutomatically: false, isSpinVisible: true });
   };
   openAddCollection = async () => {
     this.setState({ openCollection: true, check: "add" });
@@ -196,6 +212,9 @@ class DashBoard extends Component<any, any> {
         <Menu.Item onClick={this.openCitation} key="2">
           {t("dashboard.AddEntrymanually")}
         </Menu.Item>
+        <Menu.Item onClick={this.openReferenceAutomatically} key="3">
+          {t("dashboard.CSVFromComputer")}
+        </Menu.Item>
       </Menu>
     );
     const { Content, Sider } = Layout;
@@ -273,6 +292,10 @@ class DashBoard extends Component<any, any> {
               <Reference
                 open={this.state.open}
                 closeReference={this.closeReference}
+              />
+              <ReferenceAutomatically
+                open={this.state.openReferenceAutomatically}
+                closeReferenceAutomatically={this.closeReferenceAutomatically}
               />
               <Collections
                 open={this.state.openCollection}
