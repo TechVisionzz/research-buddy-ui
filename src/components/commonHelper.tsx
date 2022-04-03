@@ -28,10 +28,14 @@ const logOut = () => {
   return strapi.logout();
 };
 const createCollection = async (values: any) => {
+  var parent;
+  if (values.parent) {
+    parent = values.parent;
+  }
   return await strapi.create("collections", {
     name: values.name,
     description: values.description,
-    parent: values.parent,
+    parent: parent,
     owner: strapi.user!.id,
   });
 };

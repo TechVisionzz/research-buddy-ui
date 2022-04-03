@@ -85,18 +85,19 @@ class Collections extends Component<any, any> {
         .then(async (response: any) => {
           if (response && response.data) {
             message.success(t("addSuccess"));
-            myform.current.resetFields();
-            this.setState({
-              visible: false,
-            });
-            myself.props.closeCollection();
-            this.setState({ isSpinVisible: false });
           }
         })
         .catch(async (error: any) => {
-          message.error(error);
-          this.setState({ isSpinVisible: false });
+          console.log(error.error);
+          // message.error(error.error);
+          // this.setState({ isSpinVisible: false });
         });
+      myform.current.resetFields();
+      this.setState({
+        visible: false,
+      });
+      myself.props.closeCollection();
+      this.setState({ isSpinVisible: false });
     }
     if (this.state.check === "edit") {
       await editCollection(values)
@@ -174,6 +175,9 @@ class Collections extends Component<any, any> {
                 name="name"
                 rules={[
                   { required: true, message: "Please input your username!" },
+                  {
+                    min: 2,
+                  },
                 ]}
               >
                 <Input />
