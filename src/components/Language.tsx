@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Menu } from "antd";
 import SubMenu from "antd/lib/menu/SubMenu";
 import React, { Component } from "react";

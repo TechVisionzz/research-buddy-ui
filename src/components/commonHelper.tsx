@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Strapi from "strapi-sdk-js";
 import { GlobalVars } from "../global/global";
 var qs = require("qs");

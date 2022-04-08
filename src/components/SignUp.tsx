@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { Component } from "react";
 import { Form, Input, Button, Spin, Menu } from "antd";
 import { message } from "antd";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { Component } from "react";
 import { Layout } from "antd";
 import "../css/common.css";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { Component } from "react";
 import { Layout, Menu, Avatar, Row, Col, message, notification } from "antd";
 import { UserOutlined, SettingOutlined } from "@ant-design/icons";

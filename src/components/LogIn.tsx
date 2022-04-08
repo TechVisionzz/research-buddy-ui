@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { Component } from "react";
 import { Form, Input, Button, Checkbox, Spin, message, Menu } from "antd";
 import { Link, withRouter } from "react-router-dom";
